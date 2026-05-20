@@ -1,17 +1,5 @@
 # 🅿️ ParkShare — Marketplace de Estacionamiento On-Demand
 
-<p align="center">
-  <strong>Conectamos conductores con espacios de estacionamiento disponibles en Lima, en tiempo real.</strong>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Spring%20Boot-3.2.5-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot" />
-  <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" alt="Java 21" />
-  <img src="https://img.shields.io/badge/PostgreSQL-16%20%2B%20PostGIS-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" />
-</p>
-
 ---
 
 ## 📋 Descripción del Proyecto
