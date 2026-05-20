@@ -19,6 +19,22 @@ services:
       timeout: 5s
       retries: 5
 
+  parkshare_app:
+    build: .
+    container_name: parkshare_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      parkshare_db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://parkshare_db:5432/parkshare
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-parkshare_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-parkshare_pass}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-cambia_este_secreto_por_uno_de_al_menos_64_caracteres_aleatorios_seguro}
+      APP_JWT_EXPIRATION: ${APP_JWT_EXPIRATION:-86400000}
+    restart: unless-stopped
+
 volumes:
   parkshare_data:
     driver: local

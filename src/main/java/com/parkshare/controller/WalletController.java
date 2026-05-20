@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/wallet")
+@RequestMapping("/api/v1/wallet")
 @RequiredArgsConstructor
 public class WalletController {
 

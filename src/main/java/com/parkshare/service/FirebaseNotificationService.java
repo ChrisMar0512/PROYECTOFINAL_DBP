@@ -5,6 +5,7 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,6 +26,7 @@ public class FirebaseNotificationService {
      * @param title    título de la notificación
      * @param body     cuerpo/mensaje de la notificación
      */
+    @Async
     public void sendNotification(String fcmToken, String title, String body) {
         if (fcmToken == null || fcmToken.isBlank()) {
             log.warn("No se pudo enviar notificación: fcmToken nulo o vacío.");
@@ -56,6 +58,7 @@ public class FirebaseNotificationService {
      * @param fcmToken   token FCM del conductor con la reserva activa
      * @param nombreCochera nombre de la cochera donde está la reserva
      */
+    @Async
     public void sendReservationExpiringNotification(String fcmToken, String nombreCochera) {
         String title = "⏰ Tu reserva está por vencer";
         String body = "Tu reserva en " + nombreCochera + " expira en 5 minutos";

@@ -36,7 +36,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/parking-spaces")
+@RequestMapping("/api/v1/parking-spaces")
 @RequiredArgsConstructor
 public class ParkingSpaceController {
 

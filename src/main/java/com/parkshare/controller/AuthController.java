@@ -7,8 +7,10 @@ import com.parkshare.entity.User;
 import com.parkshare.repository.UserRepository;
 import com.parkshare.security.JwtService;
 import com.parkshare.service.WalletService;
+import com.parkshare.exception.DuplicateResourceException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
  *   POST /api/auth/login    — iniciar sesión y obtener JWT
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -35,6 +37,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final WalletService walletService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Registra un nuevo usuario en el sistema.
@@ -54,7 +57,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         // Verificar que el email no esté registrado
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalStateException("Ya existe una cuenta con el email: " + request.getEmail());
+            throw new DuplicateResourceException("Ya existe una cuenta con el email: " + request.getEmail());
         }
 
         // Construir entidad User
@@ -72,7 +75,15 @@ public class AuthController {
         // Inicializar billetera con saldo cero (Integrante 2)
         walletService.initializeWallet(savedUser);
 
-        String jwt = jwtService.generateToken(savedUser);
+        String jwt = jwtService.generateToken(
+                java.util.Map.of("role", savedUser.getRole().name()), savedUser
+        );
+
+        // Publicar evento para envío asíncrono de email de bienvenida
+        eventPublisher.publishEvent(new com.parkshare.event.UserRegisteredEvent(
+                this, savedUser.getId(), savedUser.getEmail(), savedUser.getName()
+        ));
+
         return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(jwt, savedUser));
     }
 
@@ -103,7 +114,9 @@ public class AuthController {
             userRepository.save(user);
         }
 
-        String jwt = jwtService.generateToken(user);
+        String jwt = jwtService.generateToken(
+                java.util.Map.of("role", user.getRole().name()), user
+        );
         return ResponseEntity.ok(new AuthResponse(jwt, user));
     }
 }

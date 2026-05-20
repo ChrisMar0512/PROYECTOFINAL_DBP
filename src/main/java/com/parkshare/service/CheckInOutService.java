@@ -8,6 +8,10 @@ import com.parkshare.dto.CheckOutResponse;
 import com.parkshare.dto.ParkingUpdateEvent;
 import com.parkshare.dto.QRResponse;
 import com.parkshare.dto.WalletResponse;
+import com.parkshare.exception.InvalidOperationException;
+import com.parkshare.exception.QRCodeAlreadyUsedException;
+import com.parkshare.exception.QRCodeExpiredException;
+import com.parkshare.exception.ResourceNotFoundException;
 import com.parkshare.entity.ParkingSpace;
 import com.parkshare.entity.ParkingSpace.ParkingSpaceStatus;
 import com.parkshare.entity.QRCode;
@@ -15,9 +19,9 @@ import com.parkshare.entity.Reservation;
 import com.parkshare.entity.Reservation.ReservationStatus;
 import com.parkshare.repository.QRCodeRepository;
 import com.parkshare.repository.ReservationRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,14 +44,15 @@ public class CheckInOutService {
     private final ReservationRepository reservationRepository;
     private final WalletService walletService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public QRResponse generateQR(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new EntityNotFoundException("Reserva no encontrada con id: " + reservationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + reservationId));
 
         if (reservation.getStatus() != ReservationStatus.PENDING) {
-            throw new IllegalStateException("Solo se puede generar QR para reservas pendientes");
+            throw new InvalidOperationException("Solo se puede generar QR para reservas pendientes");
         }
 
         Optional<QRCode> existingQr = qrCodeRepository.findByReservationId(reservationId);
@@ -100,14 +105,14 @@ public class CheckInOutService {
     @Transactional
     public CheckInResponse checkIn(String code) {
         QRCode qrCode = qrCodeRepository.findByCode(code)
-                .orElseThrow(() -> new EntityNotFoundException("Código QR no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Código QR no encontrado"));
 
         if (qrCode.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("El código QR ha expirado, solicita uno nuevo");
+            throw new QRCodeExpiredException("El código QR ha expirado, solicita uno nuevo");
         }
 
         if (Boolean.TRUE.equals(qrCode.getUsedForCheckin())) {
-            throw new IllegalStateException("Este QR ya fue utilizado para hacer check-in");
+            throw new QRCodeAlreadyUsedException("Este QR ya fue utilizado para hacer check-in");
         }
 
         qrCode.setUsedForCheckin(true);
@@ -133,16 +138,16 @@ public class CheckInOutService {
     @Transactional
     public CheckOutResponse checkOut(String code) {
         QRCode qrCode = qrCodeRepository.findByCode(code)
-                .orElseThrow(() -> new EntityNotFoundException("Código QR no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Código QR no encontrado"));
 
         Reservation reservation = qrCode.getReservation();
 
         if (reservation.getStatus() != ReservationStatus.ACTIVE) {
-            throw new IllegalStateException("No hay una sesión activa para este espacio");
+            throw new InvalidOperationException("No hay una sesión activa para este espacio");
         }
 
         if (Boolean.TRUE.equals(qrCode.getUsedForCheckout())) {
-            throw new IllegalStateException("Este QR ya fue utilizado para hacer check-out");
+            throw new QRCodeAlreadyUsedException("Este QR ya fue utilizado para hacer check-out");
         }
 
         /*
@@ -180,6 +185,19 @@ public class CheckInOutService {
         response.setRemainingBalance(walletResponse.getBalance());
         response.setParkingSpaceName(parkingSpace.getTitle());
         response.setReservationId(reservation.getId());
+
+        // Publicar evento para envío asíncrono de email con resumen del cobro
+        eventPublisher.publishEvent(new com.parkshare.event.ReservationCompletedEvent(
+                this,
+                reservation.getId(),
+                reservation.getDriver().getEmail(),
+                reservation.getDriver().getName(),
+                parkingSpace.getTitle(),
+                minutosUsados,
+                costoTotal,
+                walletResponse.getBalance()
+        ));
+
         return response;
     }
 }

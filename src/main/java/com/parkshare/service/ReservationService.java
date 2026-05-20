@@ -12,6 +12,9 @@ import com.parkshare.entity.User;
 import com.parkshare.repository.ParkingSpaceRepository;
 import com.parkshare.repository.ReservationRepository;
 import com.parkshare.repository.UserRepository;
+import com.parkshare.exception.ResourceNotFoundException;
+import com.parkshare.exception.SpaceNotAvailableException;
+import com.parkshare.exception.InvalidOperationException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
@@ -94,13 +97,13 @@ public class ReservationService {
         );
 
         if (space == null) {
-            throw new RuntimeException("Cochera no encontrada con id: " + parkingSpaceId);
+            throw new ResourceNotFoundException("Cochera no encontrada con id: " + parkingSpaceId);
         }
 
         // Después del lock, verificamos el estado real (podría haber cambiado
         // entre la lectura sin lock y la obtención del lock)
         if (space.getStatus() != ParkingSpaceStatus.AVAILABLE) {
-            throw new IllegalStateException("La cochera no está disponible en este momento");
+            throw new SpaceNotAvailableException("La cochera no está disponible en este momento");
         }
 
         // Cambiar estado de la cochera a RESERVED
@@ -142,7 +145,7 @@ public class ReservationService {
         User driver = getAuthenticatedUser();
 
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Reserva no encontrada con id: " + reservationId
                 ));
 
@@ -155,7 +158,7 @@ public class ReservationService {
 
         // Solo se pueden cancelar reservas PENDING
         if (reservation.getStatus() != ReservationStatus.PENDING) {
-            throw new IllegalStateException(
+            throw new InvalidOperationException(
                     "No se puede cancelar una reserva con estado: " + reservation.getStatus() +
                     ". Solo se pueden cancelar reservas PENDING."
             );
@@ -205,7 +208,7 @@ public class ReservationService {
     @Transactional(readOnly = true)
     public ReservationResponse getReservationById(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Reserva no encontrada con id: " + reservationId
                 ));
         return mapToResponse(reservation);

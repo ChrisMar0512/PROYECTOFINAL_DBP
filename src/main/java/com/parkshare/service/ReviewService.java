@@ -7,13 +7,15 @@ import com.parkshare.entity.Reservation;
 import com.parkshare.entity.Reservation.ReservationStatus;
 import com.parkshare.entity.Review;
 import com.parkshare.entity.User;
+import com.parkshare.exception.DuplicateResourceException;
+import com.parkshare.exception.InvalidOperationException;
+import com.parkshare.exception.ResourceNotFoundException;
+import com.parkshare.exception.UnauthorizedOperationException;
 import com.parkshare.repository.ReservationRepository;
 import com.parkshare.repository.ReviewRepository;
 import com.parkshare.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -36,21 +38,21 @@ public class ReviewService {
         User reviewer = getAuthenticatedUser();
         
         Reservation reservation = reservationRepository.findById(request.getReservationId())
-                .orElseThrow(() -> new EntityNotFoundException("Reserva no encontrada con id: " + request.getReservationId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + request.getReservationId()));
 
         if (reservation.getStatus() != ReservationStatus.FINISHED) {
-            throw new IllegalStateException("Solo puedes reseñar reservas completadas");
+            throw new InvalidOperationException("Solo puedes reseñar reservas completadas");
         }
 
         if (reviewRepository.existsByReservationIdAndReviewerId(reservation.getId(), reviewer.getId())) {
-            throw new IllegalStateException("Ya has enviado una reseña para esta reserva");
+            throw new DuplicateResourceException("Ya has enviado una reseña para esta reserva");
         }
 
         User driver = reservation.getDriver();
         User host = reservation.getParkingSpace().getHost();
 
         if (!reviewer.getId().equals(driver.getId()) && !reviewer.getId().equals(host.getId())) {
-            throw new AccessDeniedException("No tienes permiso para reseñar esta reserva");
+            throw new UnauthorizedOperationException("No tienes permiso para reseñar esta reserva");
         }
 
         User reviewee = reviewer.getId().equals(driver.getId()) ? host : driver;

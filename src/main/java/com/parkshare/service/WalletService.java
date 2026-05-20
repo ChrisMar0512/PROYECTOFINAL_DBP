@@ -8,6 +8,8 @@ import com.parkshare.entity.User;
 import com.parkshare.entity.Wallet;
 import com.parkshare.entity.WalletTransaction;
 import com.parkshare.entity.WalletTransaction.TransactionType;
+import com.parkshare.exception.InsufficientBalanceException;
+import com.parkshare.exception.ResourceNotFoundException;
 import com.parkshare.repository.WalletRepository;
 import com.parkshare.repository.WalletTransactionRepository;
 import jakarta.persistence.EntityManager;
@@ -164,7 +166,7 @@ public class WalletService {
 
         // Validar saldo suficiente
         if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException(
+            throw new InsufficientBalanceException(
                     "Saldo insuficiente para completar el pago. " +
                     "Saldo actual: S/. " + wallet.getBalance() + ", monto requerido: S/. " + amount
             );
@@ -316,7 +318,7 @@ public class WalletService {
      */
     private Wallet findWalletByUserIdOrThrow(Long userId) {
         return walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Billetera no encontrada para el usuario con id: " + userId
                 ));
     }

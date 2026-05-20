@@ -48,11 +48,23 @@ public class SecurityConfig {
                 // SEGURIDAD: deshabilitar CSRF porque usamos JWT (sin estado de sesión)
                 .csrf(AbstractHttpConfigurer::disable)
 
+                // CORS: permitir peticiones del frontend
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new org.springframework.web.cors.CorsConfiguration();
+                    config.setAllowedOrigins(java.util.List.of("http://localhost:3000", "http://localhost:5173"));
+                    config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(java.util.List.of("*"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
+
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas: registro y login
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         // Rutas públicas: endpoint WebSocket
                         .requestMatchers("/ws/**").permitAll()
+                        // Rutas públicas: Swagger UI / OpenAPI
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()
                 )
