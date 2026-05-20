@@ -1,0 +1,41 @@
+# ============================================================
+# ParkShare .gitignore
+# ============================================================
+
+# SEGURIDAD: Credenciales de Firebase — NUNCA subir al repositorio
+firebase-service-account.json
+src/main/resources/firebase-service-account.json
+
+# SEGURIDAD: Variables de entorno reales
+.env
+
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE — IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# IDE — Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# IDE — VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

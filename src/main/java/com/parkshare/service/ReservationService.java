@@ -1,0 +1,287 @@
+package com.parkshare.service;
+
+import com.parkshare.dto.ParkingUpdateEvent;
+import com.parkshare.dto.ReservationResponse;
+import com.parkshare.dto.ReservationResponse.DriverInfo;
+import com.parkshare.dto.ReservationResponse.ParkingSpaceInfo;
+import com.parkshare.entity.ParkingSpace;
+import com.parkshare.entity.ParkingSpace.ParkingSpaceStatus;
+import com.parkshare.entity.Reservation;
+import com.parkshare.entity.Reservation.ReservationStatus;
+import com.parkshare.entity.User;
+import com.parkshare.repository.ParkingSpaceRepository;
+import com.parkshare.repository.ReservationRepository;
+import com.parkshare.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Servicio de reservas de ParkShare.
+ *
+ * Gestiona el ciclo de vida completo de una reserva:
+ *   PENDING → ACTIVE → FINISHED  (flujo exitoso)
+ *   PENDING → EXPIRED            (tiempo agotado o cancelación)
+ *
+ * CONCURRENCIA:
+ *   createReservation usa PESSIMISTIC_WRITE lock a nivel de base de datos
+ *   para evitar race conditions al reservar la misma cochera simultáneamente.
+ *
+ * WEBSOCKET:
+ *   Se emiten eventos a /topic/parking-updates cada vez que una cochera
+ *   cambia de estado, para que los clientes actualicen su mapa en tiempo real.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ReservationService {
+
+    private final ReservationRepository reservationRepository;
+    private final ParkingSpaceRepository parkingSpaceRepository;
+    private final UserRepository userRepository;
+    private final EntityManager entityManager;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    /** Tiempo de expiración de una reserva PENDING (en minutos) */
+    private static final int EXPIRATION_MINUTES = 15;
+
+    // ==================== Crear Reserva ====================
+
+    /**
+     * Crea una nueva reserva para el DRIVER autenticado.
+     *
+     * SEGURIDAD ANTE CONCURRENCIA (PESSIMISTIC_WRITE):
+     *
+     * Sin el bloqueo pesimista, dos requests HTTP simultáneos del mismo o diferentes
+     * drivers podrían ejecutar esta secuencia en paralelo:
+     *
+     *   Thread A: lee ParkingSpace → status = AVAILABLE ✓ → continúa
+     *   Thread B: lee ParkingSpace → status = AVAILABLE ✓ → continúa  (¡ANTES de que A persista!)
+     *   Thread A: cambia status a RESERVED → guarda → crea Reservation 1
+     *   Thread B: cambia status a RESERVED → guarda → crea Reservation 2  ← ¡DUPLICADO!
+     *
+     * Resultado: dos reservas activas para la misma cochera. Esto es un race condition
+     * clásico en sistemas concurrentes. PESSIMISTIC_WRITE hace que PostgreSQL ejecute
+     * un SELECT ... FOR UPDATE, bloqueando el registro de ParkingSpace a nivel de fila
+     * en la BD. El Thread B queda esperando hasta que Thread A haga commit o rollback,
+     * momento en el cual Thread B re-lee el registro y ahora ve status = RESERVED,
+     * lanzando IllegalStateException correctamente.
+     *
+     * @param parkingSpaceId ID de la cochera a reservar
+     * @return respuesta con los datos de la reserva creada
+     * @throws IllegalStateException si la cochera no está disponible
+     */
+    @Transactional
+    public ReservationResponse createReservation(Long parkingSpaceId) {
+        User driver = getAuthenticatedUser();
+
+        // PESSIMISTIC_WRITE → SELECT ... FOR UPDATE en PostgreSQL
+        // Bloquea el registro a nivel de fila hasta que esta transacción termine.
+        // Cualquier otro thread que intente leer con lock queda en espera.
+        ParkingSpace space = entityManager.find(
+                ParkingSpace.class, parkingSpaceId, LockModeType.PESSIMISTIC_WRITE
+        );
+
+        if (space == null) {
+            throw new RuntimeException("Cochera no encontrada con id: " + parkingSpaceId);
+        }
+
+        // Después del lock, verificamos el estado real (podría haber cambiado
+        // entre la lectura sin lock y la obtención del lock)
+        if (space.getStatus() != ParkingSpaceStatus.AVAILABLE) {
+            throw new IllegalStateException("La cochera no está disponible en este momento");
+        }
+
+        // Cambiar estado de la cochera a RESERVED
+        space.setStatus(ParkingSpaceStatus.RESERVED);
+        entityManager.merge(space);
+
+        // Crear la reserva con expiración en 15 minutos
+        Reservation reservation = new Reservation();
+        reservation.setDriver(driver);
+        reservation.setParkingSpace(space);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setExpiresAt(LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES));
+
+        Reservation saved = reservationRepository.save(reservation);
+
+        // Notificar clientes WebSocket del cambio de disponibilidad
+        emitParkingUpdate(space.getId(), ParkingSpaceStatus.RESERVED.name());
+
+        log.info("Reserva creada: id={}, driver={}, cochera={}, expira={}",
+                saved.getId(), driver.getEmail(), space.getTitle(), saved.getExpiresAt());
+
+        return mapToResponse(saved);
+    }
+
+    // ==================== Cancelar Reserva ====================
+
+    /**
+     * Cancela una reserva PENDING.
+     * Solo el DRIVER dueño de la reserva puede cancelarla.
+     * No se puede cancelar una reserva que ya está ACTIVE (en uso).
+     *
+     * @param reservationId ID de la reserva a cancelar
+     * @return respuesta con la reserva actualizada
+     * @throws AccessDeniedException  si el usuario no es el dueño de la reserva
+     * @throws IllegalStateException  si la reserva ya está ACTIVE o en otro estado no cancelable
+     */
+    @Transactional
+    public ReservationResponse cancelReservation(Long reservationId) {
+        User driver = getAuthenticatedUser();
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Reserva no encontrada con id: " + reservationId
+                ));
+
+        // Verificar que el autenticado sea el dueño de la reserva
+        if (!reservation.getDriver().getId().equals(driver.getId())) {
+            throw new AccessDeniedException(
+                    "No tienes permiso para cancelar esta reserva"
+            );
+        }
+
+        // Solo se pueden cancelar reservas PENDING
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new IllegalStateException(
+                    "No se puede cancelar una reserva con estado: " + reservation.getStatus() +
+                    ". Solo se pueden cancelar reservas PENDING."
+            );
+        }
+
+        // Marcar reserva como expirada
+        reservation.setStatus(ReservationStatus.EXPIRED);
+        reservationRepository.save(reservation);
+
+        // Liberar la cochera
+        ParkingSpace space = reservation.getParkingSpace();
+        space.setStatus(ParkingSpaceStatus.AVAILABLE);
+        parkingSpaceRepository.save(space);
+
+        // Notificar clientes WebSocket
+        emitParkingUpdate(space.getId(), ParkingSpaceStatus.AVAILABLE.name());
+
+        log.info("Reserva cancelada: id={}, driver={}, cochera liberada={}",
+                reservationId, driver.getEmail(), space.getTitle());
+
+        return mapToResponse(reservation);
+    }
+
+    // ==================== Consultas ====================
+
+    /**
+     * Retorna el historial de reservas del DRIVER autenticado,
+     * ordenado por la más reciente primero.
+     *
+     * @return lista de reservas del driver
+     */
+    @Transactional(readOnly = true)
+    public List<ReservationResponse> getMyReservations() {
+        User driver = getAuthenticatedUser();
+        return reservationRepository.findByDriverIdOrderByCreatedAtDesc(driver.getId())
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retorna una reserva específica por su ID.
+     *
+     * @param reservationId ID de la reserva
+     * @return respuesta con los datos de la reserva
+     */
+    @Transactional(readOnly = true)
+    public ReservationResponse getReservationById(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Reserva no encontrada con id: " + reservationId
+                ));
+        return mapToResponse(reservation);
+    }
+
+    /**
+     * Retorna todas las reservas de una cochera específica.
+     * Útil para que el HOST vea el historial de una de sus cocheras.
+     *
+     * @param parkingSpaceId ID de la cochera
+     * @return lista de reservas de la cochera
+     */
+    @Transactional(readOnly = true)
+    public List<ReservationResponse> getReservationsByParkingSpace(Long parkingSpaceId) {
+        return reservationRepository.findByParkingSpaceId(parkingSpaceId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // ==================== Métodos Auxiliares ====================
+
+    /**
+     * Obtiene el usuario autenticado desde el SecurityContextHolder.
+     */
+    private User getAuthenticatedUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException(
+                        "Usuario autenticado no encontrado: " + email
+                ));
+    }
+
+    /**
+     * Emite un evento WebSocket al topic /topic/parking-updates
+     * para que los clientes refresquen el estado de la cochera en el mapa.
+     *
+     * @param parkingSpaceId ID de la cochera
+     * @param newStatus      nuevo estado ("AVAILABLE", "RESERVED", "OCCUPIED")
+     */
+    private void emitParkingUpdate(Long parkingSpaceId, String newStatus) {
+        ParkingUpdateEvent event = new ParkingUpdateEvent(parkingSpaceId, newStatus);
+        messagingTemplate.convertAndSend("/topic/parking-updates", event);
+    }
+
+    /**
+     * Mapea una entidad Reservation a su DTO de respuesta.
+     * Incluye información resumida de la cochera y del conductor sin datos sensibles.
+     */
+    private ReservationResponse mapToResponse(Reservation reservation) {
+        ReservationResponse response = new ReservationResponse();
+        response.setId(reservation.getId());
+        response.setStatus(reservation.getStatus().name());
+        response.setReservedAt(reservation.getReservedAt());
+        response.setStartTime(reservation.getStartTime());
+        response.setEndTime(reservation.getEndTime());
+        response.setExpiresAt(reservation.getExpiresAt());
+
+        // Info de la cochera — datos básicos sin detalles sensibles
+        ParkingSpace space = reservation.getParkingSpace();
+        ParkingSpaceInfo spaceInfo = new ParkingSpaceInfo();
+        spaceInfo.setId(space.getId());
+        spaceInfo.setTitle(space.getTitle());
+        spaceInfo.setAddress(space.getAddress());
+        spaceInfo.setPricePerHour(space.getPricePerHour());
+        response.setParkingSpace(spaceInfo);
+
+        // Info del conductor — NUNCA incluir password
+        User driver = reservation.getDriver();
+        DriverInfo driverInfo = new DriverInfo();
+        driverInfo.setId(driver.getId());
+        driverInfo.setName(driver.getName());
+        driverInfo.setEmail(driver.getEmail());
+        response.setDriver(driverInfo);
+
+        return response;
+    }
+}
