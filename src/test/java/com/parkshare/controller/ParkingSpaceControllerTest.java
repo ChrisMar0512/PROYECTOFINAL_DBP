@@ -39,10 +39,10 @@ class ParkingSpaceControllerTest {
     private JwtAuthFilter jwtAuthFilter;
 
     @Test
-    void shouldGetAllParkingSpaces() throws Exception {
-        when(parkingSpaceService.getAllParkingSpaces()).thenReturn(Collections.emptyList());
+    void shouldGetMyParkingSpaces() throws Exception {
+        when(parkingSpaceService.getMyParkingSpaces()).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/v1/parking-spaces")
+        mockMvc.perform(get("/api/v1/parking-spaces/mine")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }

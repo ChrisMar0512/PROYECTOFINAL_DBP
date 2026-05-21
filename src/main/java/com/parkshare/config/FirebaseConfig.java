@@ -51,6 +51,11 @@ public class FirebaseConfig {
         }
 
         Resource resource = resourceLoader.getResource(firebaseCredentialsPath);
+        if (!resource.exists()) {
+            log.warn("Archivo de credenciales de Firebase no encontrado en: {}. Se omitirá la inicialización de Firebase y las notificaciones push no estarán disponibles en este ambiente local.", firebaseCredentialsPath);
+            return null;
+        }
+
         try (InputStream serviceAccountStream = resource.getInputStream()) {
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccountStream))

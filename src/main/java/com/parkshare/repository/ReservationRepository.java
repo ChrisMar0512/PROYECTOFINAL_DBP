@@ -64,7 +64,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
      */
     @Query("""
         SELECT r FROM Reservation r
-        WHERE r.status = com.parkshare.entity.Reservation.ReservationStatus.PENDING
+        WHERE r.status = com.parkshare.entity.Reservation$ReservationStatus.PENDING
           AND r.expiresAt < :now
         """)
     List<Reservation> findExpiredPendingReservations(@Param("now") LocalDateTime now);
@@ -83,7 +83,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
      */
     @Query("""
         SELECT r FROM Reservation r
-        WHERE r.status = com.parkshare.entity.Reservation.ReservationStatus.PENDING
+        WHERE r.status = com.parkshare.entity.Reservation$ReservationStatus.PENDING
           AND r.expiresAt BETWEEN :now AND :fiveMinutesLater
         """)
     List<Reservation> findPendingReservationsExpiringIn5Minutes(
@@ -100,7 +100,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query("""
         SELECT COUNT(r) FROM Reservation r
         WHERE r.parkingSpace.host.id = :hostId
-          AND r.status = com.parkshare.entity.Reservation.ReservationStatus.FINISHED
+          AND r.status = com.parkshare.entity.Reservation$ReservationStatus.FINISHED
         """)
     long countFinishedByHostId(@Param("hostId") Long hostId);
 

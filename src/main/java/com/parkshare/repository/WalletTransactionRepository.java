@@ -62,7 +62,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
         SELECT COALESCE(SUM(wt.amount), 0)
         FROM WalletTransaction wt
         WHERE wt.wallet.id = :walletId
-          AND wt.type = com.parkshare.entity.WalletTransaction.TransactionType.CHARGE
+          AND wt.type = com.parkshare.entity.WalletTransaction$TransactionType.CHARGE
         """)
     BigDecimal sumChargesByWalletId(@Param("walletId") Long walletId);
 
@@ -73,7 +73,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
         SELECT COALESCE(SUM(wt.amount), 0)
         FROM WalletTransaction wt
         WHERE wt.wallet.id = :walletId
-          AND wt.type = com.parkshare.entity.WalletTransaction.TransactionType.CHARGE
+          AND wt.type = com.parkshare.entity.WalletTransaction$TransactionType.CHARGE
           AND wt.createdAt >= :from
           AND wt.createdAt < :to
         """)
@@ -101,7 +101,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
         SELECT COALESCE(SUM(wt.amount), 0)
         FROM WalletTransaction wt
         WHERE wt.reservation.parkingSpace.host.id = :hostId
-          AND wt.type = com.parkshare.entity.WalletTransaction.TransactionType.CHARGE
+          AND wt.type = com.parkshare.entity.WalletTransaction$TransactionType.CHARGE
         """)
     BigDecimal sumEarningsByHostId(@Param("hostId") Long hostId);
 }

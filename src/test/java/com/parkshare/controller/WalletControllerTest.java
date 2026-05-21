@@ -48,7 +48,7 @@ class WalletControllerTest {
         WalletResponse response = new WalletResponse();
         response.setBalance(new BigDecimal("100.00"));
 
-        when(walletService.getBalance()).thenReturn(response);
+        when(walletService.getBalance(any(Long.class))).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/wallet/balance"))
                 .andExpect(status().isOk())
@@ -63,7 +63,7 @@ class WalletControllerTest {
         WalletResponse response = new WalletResponse();
         response.setBalance(new BigDecimal("150.00"));
 
-        when(walletService.topUp(any(BigDecimal.class))).thenReturn(response);
+        when(walletService.topUp(any(Long.class), any(BigDecimal.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/wallet/topup")
                         .contentType(MediaType.APPLICATION_JSON)

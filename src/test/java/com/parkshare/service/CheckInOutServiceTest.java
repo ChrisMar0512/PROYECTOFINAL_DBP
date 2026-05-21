@@ -160,7 +160,7 @@ class CheckInOutServiceTest {
 
         verify(qrCodeRepository).save(qrCode);
         verify(reservationRepository).save(reservation);
-        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any(Object.class));
     }
 
     @Test
@@ -228,6 +228,6 @@ class CheckInOutServiceTest {
         assertThat(parkingSpace.getStatus()).isEqualTo(ParkingSpaceStatus.AVAILABLE);
 
         verify(walletService).charge(eq(1L), any(BigDecimal.class), eq(reservation));
-        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any(Object.class));
     }
 }

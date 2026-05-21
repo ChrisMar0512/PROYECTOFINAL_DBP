@@ -52,7 +52,7 @@ class ReservationControllerTest {
         response.setId(100L);
         response.setStatus("PENDING");
 
-        when(reservationService.createReservation(any(CreateReservationRequest.class))).thenReturn(response);
+        when(reservationService.createReservation(any(Long.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/reservations")
                         .contentType(MediaType.APPLICATION_JSON)

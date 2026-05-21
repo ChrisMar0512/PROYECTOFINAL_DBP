@@ -131,7 +131,7 @@ class ReservationServiceTest {
         verify(entityManager).merge(parkingSpace);
         assertThat(parkingSpace.getStatus()).isEqualTo(ParkingSpaceStatus.RESERVED);
         verify(reservationRepository).save(any(Reservation.class));
-        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any(Object.class));
     }
 
     @Test
@@ -180,7 +180,7 @@ class ReservationServiceTest {
         assertThat(parkingSpace.getStatus()).isEqualTo(ParkingSpaceStatus.AVAILABLE);
         verify(reservationRepository).save(reservation);
         verify(parkingSpaceRepository).save(parkingSpace);
-        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/parking-updates"), any(Object.class));
     }
 
     @Test
