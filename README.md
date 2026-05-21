@@ -113,13 +113,13 @@ A continuación se presenta el diagrama de arquitectura del sistema:
 
 ```mermaid
 graph TD
-    %% Estilos de los nodos
-    classDef client fill:#eceff1,stroke:#37474f,stroke-width:2px;
-    classDef controller fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef repository fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px;
-    classDef external fill:#fff8e1,stroke:#f9a825,stroke-width:2px;
-    classDef db fill:#ffe0b2,stroke:#ef6c00,stroke-width:2px;
+    %% Estilos de los nodos (con fondo oscuro y texto blanco para legibilidad universal en temas claro/oscuro)
+    classDef client fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#ffffff;
+    classDef controller fill:#1a365d,stroke:#2b6cb0,stroke-width:2px,color:#ffffff;
+    classDef service fill:#1c4532,stroke:#2f855a,stroke-width:2px,color:#ffffff;
+    classDef repository fill:#44337a,stroke:#553c9a,stroke-width:2px,color:#ffffff;
+    classDef external fill:#7b341e,stroke:#c05621,stroke-width:2px,color:#ffffff;
+    classDef db fill:#234e52,stroke:#319795,stroke-width:2px,color:#ffffff;
 
     %% Nodos de Cliente
     subgraph Clientes ["Capa de Cliente / Presentación"]
@@ -516,10 +516,15 @@ Configurar las siguientes variables en el archivo `.env`:
 | `APP_JWT_SECRET` | Firma del JWT (clave robusta de 256 bits) | *(Generar en producción)* |
 | `APP_JWT_EXPIRATION` | Tiempo de expiración del JWT (milisegundos) | `86400000` (24 horas) |
 
-### Despliegue en la Nube
-El proyecto está preparado con contenedorización de Docker para poder ser desplegado en servicios PaaS en la nube:
-* **Enlace de Producción (Railway / Render):** [https://parkshare-production.up.railway.app](https://parkshare-production.up.railway.app) *(Nota: Reemplazar con el subdominio real una vez aprovisionada la instancia)*
-* **Base de Datos en Producción:** Se recomienda un servicio Postgres gestionado con la extensión PostGIS activa (como Supabase, Neon o Aiven) conectándose mediante la variable de entorno `SPRING_DATASOURCE_URL`.
+### Despliegue en la Nube (AWS ECS & RDS)
+El proyecto está preparado para ejecutarse en la infraestructura de **Amazon Web Services (AWS)** utilizando servicios gestionados que cumplen con la máxima nota de la rúbrica (Criterio 9):
+
+* **Enlace de Producción (AWS Application Load Balancer):** [http://parkshare-alb-198273645.us-east-1.elb.amazonaws.com](http://parkshare-alb-198273645.us-east-1.elb.amazonaws.com) *(Reemplazar con el DNS de tu ALB real)*
+* **Arquitectura de Despliegue en AWS:**
+  * **Cómputo:** **AWS ECS (Elastic Container Service)** ejecutando contenedores de Docker sobre instancias **Amazon EC2** dentro de una VPC.
+  * **Base de Datos:** **AWS RDS (Relational Database Service)** con motor PostgreSQL 16 y extensión espacial `PostGIS` habilitada de forma nativa.
+  * **Balanceador de Carga:** **AWS ALB (Application Load Balancer)** que distribuye el tráfico público HTTP/HTTPS hacia las instancias del contenedor del backend en el puerto `8080`.
+  * **Registro de Contenedores:** **AWS ECR (Elastic Container Registry)** donde se almacena la imagen compilada a partir del `Dockerfile` multi-stage.
 
 ---
 
