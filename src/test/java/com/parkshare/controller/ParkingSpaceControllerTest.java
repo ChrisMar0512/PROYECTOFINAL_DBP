@@ -42,7 +42,7 @@ class ParkingSpaceControllerTest {
     void shouldGetMyParkingSpaces() throws Exception {
         when(parkingSpaceService.getMyParkingSpaces()).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/v1/parking-spaces/mine")
+        mockMvc.perform(get("/api/v1/parking-spaces/my-published-spaces")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }

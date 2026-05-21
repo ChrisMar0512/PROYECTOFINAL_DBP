@@ -53,7 +53,7 @@ public class AuthController {
      * @param request datos del nuevo usuario
      * @return AuthResponse con JWT y datos básicos del usuario
      */
-    @PostMapping("/register")
+    @PostMapping("/register-user")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         // Verificar que el email no esté registrado
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -98,7 +98,7 @@ public class AuthController {
      * @param request credenciales del usuario (email, password, fcmToken opcional)
      * @return AuthResponse con JWT y datos básicos del usuario
      */
-    @PostMapping("/login")
+    @PostMapping("/login-user")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         // SEGURIDAD: AuthenticationManager verifica credenciales con BCrypt
         // Lanza BadCredentialsException automáticamente si son incorrectas

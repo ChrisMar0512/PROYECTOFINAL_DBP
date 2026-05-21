@@ -53,7 +53,7 @@ class ReviewControllerTest {
 
         when(reviewService.createReview(any(CreateReviewRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/reviews")
+        mockMvc.perform(post("/api/v1/reviews/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())

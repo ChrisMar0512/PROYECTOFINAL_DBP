@@ -46,7 +46,7 @@ public class ParkingSpaceDataSeeder implements CommandLineRunner {
     private final ParkingSpaceRepository parkingSpaceRepository;
     private final UserRepository userRepository;
 
-    private static final String HOST_EMAIL = "host@parkshare.com";
+    private static final String HOST_EMAIL = "seeded_host@parkshare.com";
 
     /** Lista de amenidades a crear si no existen */
     private static final List<String> FEATURE_NAMES = List.of(

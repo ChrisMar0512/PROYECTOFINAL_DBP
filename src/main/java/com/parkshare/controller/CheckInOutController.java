@@ -16,23 +16,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/checkin")
+@RequestMapping("/api/v1/check-in-out")
 @RequiredArgsConstructor
 public class CheckInOutController {
 
     private final CheckInOutService checkInOutService;
 
-    @PostMapping("/generate/{reservationId}")
+    @PostMapping("/generate-qr/{reservationId}")
     public ResponseEntity<QRResponse> generateQR(@PathVariable Long reservationId) {
         return ResponseEntity.ok(checkInOutService.generateQR(reservationId));
     }
 
-    @PostMapping("/check-in")
+    @PostMapping("/process-check-in")
     public ResponseEntity<CheckInResponse> checkIn(@Valid @RequestBody CheckInRequest request) {
         return ResponseEntity.ok(checkInOutService.checkIn(request.getCode()));
     }
 
-    @PostMapping("/check-out")
+    @PostMapping("/process-check-out")
     public ResponseEntity<CheckOutResponse> checkOut(@Valid @RequestBody CheckOutRequest request) {
         return ResponseEntity.ok(checkInOutService.checkOut(request.getCode()));
     }

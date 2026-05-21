@@ -393,7 +393,7 @@ Base URL del proyecto: `/api/v1`
 
 ### 🔑 Autenticación (`/api/v1/auth`)
 
-* **`POST /api/v1/auth/register`**
+* **`POST /api/v1/auth/register-user`**
   * **Descripción:** Registra un nuevo usuario en la plataforma.
   * **Acceso:** Público.
   * **Cuerpo (JSON):**
@@ -406,7 +406,7 @@ Base URL del proyecto: `/api/v1`
       "role": "DRIVER"
     }
     ```
-* **`POST /api/v1/auth/login`**
+* **`POST /api/v1/auth/login-user`**
   * **Descripción:** Autentica a un usuario y genera su token JWT de sesión.
   * **Acceso:** Público.
   * **Cuerpo (JSON):**
@@ -420,91 +420,91 @@ Base URL del proyecto: `/api/v1`
 
 ### 🅿️ Gestión de Cocheras (`/api/v1/parking-spaces`)
 
-* **`GET /api/v1/parking-spaces/search`**
+* **`GET /api/v1/parking-spaces/search-nearby`**
   * **Descripción:** Busca cocheras disponibles en el radio indicado.
   * **Acceso:** Cualquier rol autenticado con JWT.
   * **Parámetros:** `lat` (double), `lng` (double), `radius` (double, por defecto 1000m).
-* **`POST /api/v1/parking-spaces`**
+* **`POST /api/v1/parking-spaces/create`**
   * **Descripción:** Registra una cochera. Consume datos multipart/form-data.
   * **Acceso:** `HOST` con JWT.
   * **Form-data:** Partes `data` (JSON con metadatos) y `photo` (archivo de imagen).
-* **`PUT /api/v1/parking-spaces/{id}`**
+* **`PUT /api/v1/parking-spaces/{id}/update`**
   * **Descripción:** Modifica los metadatos o la foto de una cochera.
   * **Acceso:** `HOST` dueño de la cochera con JWT.
-* **`PUT /api/v1/parking-spaces/{id}/availability`**
+* **`PUT /api/v1/parking-spaces/{id}/change-availability`**
   * **Descripción:** Cambia disponibilidad manual (AVAILABLE, RESERVED, OCCUPIED).
   * **Acceso:** `HOST` con JWT.
-* **`GET /api/v1/parking-spaces/mine`**
+* **`GET /api/v1/parking-spaces/my-published-spaces`**
   * **Descripción:** Lista los espacios registrados por el host autenticado.
   * **Acceso:** `HOST` con JWT.
-* **`GET /api/v1/parking-spaces/dashboard`**
+* **`GET /api/v1/parking-spaces/host-dashboard`**
   * **Descripción:** Métricas del host (ganancias, cocheras, rating, reservas recientes).
   * **Acceso:** `HOST` con JWT.
-* **`POST /api/v1/parking-spaces/{id}/favorites`**
+* **`POST /api/v1/parking-spaces/{id}/add-to-favorites`**
   * **Descripción:** Agrega una cochera a favoritos.
   * **Acceso:** `DRIVER` con JWT.
-* **`DELETE /api/v1/parking-spaces/{id}/favorites`**
+* **`DELETE /api/v1/parking-spaces/{id}/remove-from-favorites`**
   * **Descripción:** Elimina una cochera de favoritos.
   * **Acceso:** `DRIVER` con JWT.
-* **`GET /api/v1/parking-spaces/favorites`**
+* **`GET /api/v1/parking-spaces/my-favorite-spaces`**
   * **Descripción:** Lista las cocheras marcadas como favoritas del usuario.
   * **Acceso:** `DRIVER` con JWT.
 
 ### 📅 Reservaciones (`/api/v1/reservations`)
 
-* **`POST /api/v1/reservations`**
+* **`POST /api/v1/reservations/create`**
   * **Descripción:** Reserva una cochera disponible. Expira a los 15 minutos.
   * **Acceso:** Cualquier usuario autenticado (`DRIVER` recomendado) con JWT.
   * **Cuerpo (JSON):** `{"parkingSpaceId": 1}`
-* **`GET /api/v1/reservations/my-history`**
+* **`GET /api/v1/reservations/my-driver-history`**
   * **Descripción:** Historial completo de reservas realizadas por el usuario.
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`GET /api/v1/reservations/{id}`**
+* **`GET /api/v1/reservations/detail/{id}`**
   * **Descripción:** Detalle de una reserva en específico.
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`DELETE /api/v1/reservations/{id}`**
+* **`DELETE /api/v1/reservations/cancel/{id}`**
   * **Descripción:** Cancela una reserva en estado `PENDING`.
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`GET /api/v1/reservations/parking-space/{parkingSpaceId}`**
+* **`GET /api/v1/reservations/by-parking-space/{parkingSpaceId}`**
   * **Descripción:** Historial de reservas asociadas a una cochera en específico.
   * **Acceso:** `HOST` dueño de la cochera con JWT.
 
-### 📲 Check-in y Check-out (`/api/v1/checkin`)
+### 📲 Check-in y Check-out (`/api/v1/check-in-out`)
 
-* **`POST /api/v1/checkin/generate/{reservationId}`**
+* **`POST /api/v1/check-in-out/generate-qr/{reservationId}`**
   * **Descripción:** Genera el código QR para realizar check-in/out físico.
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`POST /api/v1/checkin/check-in`**
+* **`POST /api/v1/check-in-out/process-check-in`**
   * **Descripción:** Realiza check-in enviando el UUID del código QR.
   * **Acceso:** Cualquier usuario autenticado con JWT.
   * **Cuerpo (JSON):** `{"code": "uuid-de-ejemplo"}`
-* **`POST /api/v1/checkin/check-out`**
+* **`POST /api/v1/check-in-out/process-check-out`**
   * **Descripción:** Realiza check-out enviando el UUID del QR. Cobra de la billetera.
   * **Acceso:** Cualquier usuario autenticado con JWT.
   * **Cuerpo (JSON):** `{"code": "uuid-de-ejemplo"}`
 
 ### 💰 Billetera Virtual (`/api/v1/wallet`)
 
-* **`GET /api/v1/wallet/balance`**
+* **`GET /api/v1/wallet/my-balance`**
   * **Descripción:** Consulta el saldo y fecha de actualización de la billetera.
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`POST /api/v1/wallet/topup`**
+* **`POST /api/v1/wallet/deposit`**
   * **Descripción:** Recarga saldo en el monedero digital.
   * **Acceso:** Cualquier usuario autenticado con JWT.
   * **Cuerpo (JSON):** `{"amount": 50.00}`
-* **`GET /api/v1/wallet/transactions`**
+* **`GET /api/v1/wallet/transaction-history`**
   * **Descripción:** Historial paginado de transacciones (TOPUP, CHARGE, REFUND).
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`GET /api/v1/wallet/transactions/type/{type}`**
+* **`GET /api/v1/wallet/transaction-history/by-type/{type}`**
   * **Descripción:** Transacciones filtradas por tipo específico.
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`GET /api/v1/wallet/earnings-summary`**
+* **`GET /api/v1/wallet/host-earnings-summary`**
   * **Descripción:** Resumen financiero mensual de ingresos del anfitrión.
   * **Acceso:** `HOST` con JWT.
 
 ### ⭐ Reseñas (`/api/v1/reviews`)
 
-* **`POST /api/v1/reviews`**
+* **`POST /api/v1/reviews/create`**
   * **Descripción:** Publica una calificación tras culminar el uso de la cochera.
   * **Acceso:** Cualquier usuario autenticado con JWT.
   * **Cuerpo (JSON):**
@@ -515,10 +515,10 @@ Base URL del proyecto: `/api/v1`
       "comment": "Lugar muy seguro y accesible"
     }
     ```
-* **`GET /api/v1/reviews/parking-space/{id}`**
+* **`GET /api/v1/reviews/by-parking-space/{id}`**
   * **Descripción:** Consulta las reseñas y promedio de una cochera.
   * **Acceso:** Cualquier usuario autenticado con JWT.
-* **`GET /api/v1/reviews/user/{id}`**
+* **`GET /api/v1/reviews/by-user/{id}`**
   * **Descripción:** Consulta las reseñas dadas/recibidas por un usuario.
   * **Acceso:** Cualquier usuario autenticado con JWT.
 

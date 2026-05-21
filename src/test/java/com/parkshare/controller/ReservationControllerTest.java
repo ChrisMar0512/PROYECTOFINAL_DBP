@@ -54,7 +54,7 @@ class ReservationControllerTest {
 
         when(reservationService.createReservation(any(Long.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/reservations")
+        mockMvc.perform(post("/api/v1/reservations/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -66,7 +66,7 @@ class ReservationControllerTest {
     void shouldGetMyReservations() throws Exception {
         when(reservationService.getMyReservations()).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/v1/reservations/my"))
+        mockMvc.perform(get("/api/v1/reservations/my-driver-history"))
                 .andExpect(status().isOk());
     }
 }

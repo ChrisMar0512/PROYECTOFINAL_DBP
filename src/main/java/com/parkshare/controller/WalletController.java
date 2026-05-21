@@ -45,7 +45,7 @@ public class WalletController {
      *
      * @return WalletResponse con userId, balance y updatedAt
      */
-    @GetMapping("/balance")
+    @GetMapping("/my-balance")
     public ResponseEntity<WalletResponse> getBalance() {
         User user = getAuthenticatedUser();
         return ResponseEntity.ok(walletService.getBalance(user.getId()));
@@ -59,7 +59,7 @@ public class WalletController {
      * @param request contiene el monto a recargar (debe ser positivo)
      * @return WalletResponse con el saldo actualizado
      */
-    @PostMapping("/topup")
+    @PostMapping("/deposit")
     public ResponseEntity<WalletResponse> topUp(@Valid @RequestBody TopUpRequest request) {
         User user = getAuthenticatedUser();
         WalletResponse response = walletService.topUp(user.getId(), request.getAmount());
@@ -76,7 +76,7 @@ public class WalletController {
      * @param size cantidad de elementos por página (default: 10)
      * @return página de transacciones
      */
-    @GetMapping("/transactions")
+    @GetMapping("/transaction-history")
     public ResponseEntity<Page<WalletTransactionResponse>> getTransactions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
@@ -96,7 +96,7 @@ public class WalletController {
      * @param size cantidad de elementos por página (default: 10)
      * @return página de transacciones del tipo indicado
      */
-    @GetMapping("/transactions/type/{type}")
+    @GetMapping("/transaction-history/by-type/{type}")
     public ResponseEntity<Page<WalletTransactionResponse>> getTransactionsByType(
             @PathVariable TransactionType type,
             @RequestParam(defaultValue = "0") int page,
@@ -119,7 +119,7 @@ public class WalletController {
      *
      * @return EarningsSummaryResponse con métricas financieras
      */
-    @GetMapping("/earnings-summary")
+    @GetMapping("/host-earnings-summary")
     @PreAuthorize("hasRole('HOST')")
     public ResponseEntity<EarningsSummaryResponse> getEarningsSummary() {
         User user = getAuthenticatedUser();

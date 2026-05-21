@@ -41,7 +41,7 @@ public class DemoDataSeeder implements CommandLineRunner {
 
         log.info("Creando datos de demostración (Reserva finalizada y Review)...");
 
-        User driver = userRepository.findByEmail("driver@parkshare.com").orElse(null);
+        User driver = userRepository.findByEmail("seeded_driver@parkshare.com").orElse(null);
         if (driver == null) {
             log.warn("Usuario driver no encontrado, abortando DemoDataSeeder.");
             return;

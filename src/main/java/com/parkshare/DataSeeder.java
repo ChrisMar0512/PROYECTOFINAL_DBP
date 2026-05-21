@@ -17,8 +17,8 @@ import java.math.BigDecimal;
  * Se ejecuta automáticamente al arrancar la aplicación.
  *
  * Crea dos usuarios de prueba si no existen:
- *   - DRIVER: driver@parkshare.com / password123 (con S/. 100 de saldo inicial)
- *   - HOST:   host@parkshare.com   / password123
+ *   - DRIVER: seeded_driver@parkshare.com / SecurePassword123 (con S/. 100 de saldo inicial)
+ *   - HOST:   seeded_host@parkshare.com   / SecurePassword123
  *
  * NOTA: Solo para entornos de desarrollo/testing.
  * En producción, deshabilitar o proteger con un perfil Spring (@Profile("dev")).
@@ -34,7 +34,7 @@ public class DataSeeder implements CommandLineRunner {
     private final WalletService walletService;
 
     private static final String SEED_CHECK_EMAIL = "admin@parkshare.com";
-    private static final String DEFAULT_PASSWORD = "password123";
+    private static final String DEFAULT_PASSWORD = "SecurePassword123";
 
     @Override
     public void run(String... args) {
@@ -49,7 +49,7 @@ public class DataSeeder implements CommandLineRunner {
         // --- Usuario DRIVER ---
         User driver = new User();
         driver.setName("Carlos Driver");
-        driver.setEmail("driver@parkshare.com");
+        driver.setEmail("seeded_driver@parkshare.com");
         driver.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
         driver.setPhone("999111222");
         driver.setRole(User.Role.DRIVER);
@@ -65,7 +65,7 @@ public class DataSeeder implements CommandLineRunner {
         // --- Usuario HOST ---
         User host = new User();
         host.setName("María Host");
-        host.setEmail("host@parkshare.com");
+        host.setEmail("seeded_host@parkshare.com");
         host.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
         host.setPhone("999333444");
         host.setRole(User.Role.HOST);
@@ -87,7 +87,7 @@ public class DataSeeder implements CommandLineRunner {
         userRepository.save(admin);
 
         log.info("✅ Datos de prueba creados exitosamente. " +
-                "Credenciales: driver@parkshare.com / {} y host@parkshare.com / {}",
+                "Credenciales: seeded_driver@parkshare.com / {} y seeded_host@parkshare.com / {}",
                 DEFAULT_PASSWORD, DEFAULT_PASSWORD);
     }
 }

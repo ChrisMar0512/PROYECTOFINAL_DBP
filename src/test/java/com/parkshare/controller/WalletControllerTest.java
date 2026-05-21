@@ -7,12 +7,17 @@ import com.parkshare.exception.InvalidOperationException;
 import com.parkshare.security.JwtAuthFilter;
 import com.parkshare.security.JwtService;
 import com.parkshare.service.WalletService;
+import com.parkshare.entity.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -43,6 +48,17 @@ class WalletControllerTest {
     @MockBean
     private JwtAuthFilter jwtAuthFilter;
 
+    @BeforeEach
+    void setUp() {
+        User mockUser = new User();
+        mockUser.setId(1L);
+        mockUser.setEmail("driver@test.com");
+        mockUser.setRole(User.Role.DRIVER);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(mockUser, null, mockUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     @Test
     void shouldReturnBalanceSuccessfully() throws Exception {
         WalletResponse response = new WalletResponse();
@@ -50,7 +66,7 @@ class WalletControllerTest {
 
         when(walletService.getBalance(any(Long.class))).thenReturn(response);
 
-        mockMvc.perform(get("/api/v1/wallet/balance"))
+        mockMvc.perform(get("/api/v1/wallet/my-balance"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.balance").value(100.00));
     }
@@ -65,7 +81,7 @@ class WalletControllerTest {
 
         when(walletService.topUp(any(Long.class), any(BigDecimal.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/wallet/topup")
+        mockMvc.perform(post("/api/v1/wallet/deposit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

@@ -24,17 +24,17 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ReviewResponse> createReview(@Valid @RequestBody CreateReviewRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewService.createReview(request));
     }
 
-    @GetMapping("/parking-space/{id}")
+    @GetMapping("/by-parking-space/{id}")
     public ResponseEntity<ParkingSpaceReviewsResponse> getReviewsForParkingSpace(@PathVariable Long id) {
         return ResponseEntity.ok(reviewService.getReviewsForParkingSpace(id));
     }
 
-    @GetMapping("/user/{id}")
+    @GetMapping("/by-user/{id}")
     public ResponseEntity<List<ReviewResponse>> getReviewsForUser(@PathVariable Long id) {
         return ResponseEntity.ok(reviewService.getReviewsForUser(id));
     }

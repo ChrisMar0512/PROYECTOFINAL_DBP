@@ -49,6 +49,12 @@ class AuthControllerTest {
     @MockBean
     private WalletService walletService;
 
+    @MockBean
+    private org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder;
+
+    @MockBean
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     // TODO: Falta mockear UserRepository para que el código actual del AuthController
     // funcione en los tests, pero como se usa @MockBean en un @WebMvcTest,
     // necesitamos añadirlo.
@@ -77,12 +83,12 @@ class AuthControllerTest {
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(jwtService.generateToken(any(), any(User.class))).thenReturn("jwt.token.here");
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value("jwt.token.here"))
-                .andExpect(jsonPath("$.user.email").value("test@test.com"));
+                .andExpect(jsonPath("$.email").value("test@test.com"));
     }
 
     @Test
@@ -96,7 +102,7 @@ class AuthControllerTest {
 
         when(userRepository.findByEmail(request.getEmail())).thenThrow(new DuplicateResourceException("Email exists"));
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
@@ -118,7 +124,7 @@ class AuthControllerTest {
         when(userRepository.findByEmail(request.getEmail())).thenReturn(java.util.Optional.of(user));
         when(jwtService.generateToken(any(), any(User.class))).thenReturn("jwt.token.here");
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

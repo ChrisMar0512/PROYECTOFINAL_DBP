@@ -50,7 +50,7 @@ class CheckInOutControllerTest {
 
         when(checkInOutService.generateQR(1L)).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/checkin/generate/1"))
+        mockMvc.perform(post("/api/v1/check-in-out/generate-qr/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("test-qr-code"));
     }
@@ -65,7 +65,7 @@ class CheckInOutControllerTest {
 
         when(checkInOutService.checkIn(eq("test-code"))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/checkin/check-in")
+        mockMvc.perform(post("/api/v1/check-in-out/process-check-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -82,7 +82,7 @@ class CheckInOutControllerTest {
 
         when(checkInOutService.checkOut(eq("test-code"))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/checkin/check-out")
+        mockMvc.perform(post("/api/v1/check-in-out/process-check-out")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

@@ -44,7 +44,7 @@ public class ReservationController {
      * @param request contiene el parkingSpaceId a reservar
      * @return 201 CREATED con los datos de la reserva creada
      */
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ReservationResponse> createReservation(
             @Valid @RequestBody CreateReservationRequest request
     ) {
@@ -62,7 +62,7 @@ public class ReservationController {
      *
      * @return lista de reservas del driver
      */
-    @GetMapping("/my-history")
+    @GetMapping("/my-driver-history")
     public ResponseEntity<List<ReservationResponse>> getMyHistory() {
         return ResponseEntity.ok(reservationService.getMyReservations());
     }
@@ -75,7 +75,7 @@ public class ReservationController {
      * @param id ID de la reserva
      * @return reserva completa con info de cochera y driver
      */
-    @GetMapping("/{id}")
+    @GetMapping("/detail/{id}")
     public ResponseEntity<ReservationResponse> getReservation(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.getReservationById(id));
     }
@@ -92,7 +92,7 @@ public class ReservationController {
      * @param id ID de la reserva a cancelar
      * @return reserva actualizada con status EXPIRED
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/cancel/{id}")
     public ResponseEntity<ReservationResponse> cancelReservation(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }
@@ -106,7 +106,7 @@ public class ReservationController {
      * @param parkingSpaceId ID de la cochera
      * @return lista de reservas de la cochera
      */
-    @GetMapping("/parking-space/{parkingSpaceId}")
+    @GetMapping("/by-parking-space/{parkingSpaceId}")
     public ResponseEntity<List<ReservationResponse>> getReservationsByParkingSpace(
             @PathVariable Long parkingSpaceId
     ) {

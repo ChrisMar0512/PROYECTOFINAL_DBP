@@ -57,7 +57,7 @@ public class ParkingSpaceController {
      * @param photo    foto de la cochera (opcional)
      * @return 201 CREATED con los datos de la cochera creada
      */
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('HOST')")
     public ResponseEntity<ParkingSpaceResponse> createParkingSpace(
             @RequestPart("data") String dataJson,
@@ -76,7 +76,7 @@ public class ParkingSpaceController {
      * @param photo    nueva foto (opcional — reemplaza la anterior si se provee)
      * @return 200 OK con los datos actualizados
      */
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{id}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('HOST')")
     public ResponseEntity<ParkingSpaceResponse> updateParkingSpace(
             @PathVariable Long id,
@@ -97,7 +97,7 @@ public class ParkingSpaceController {
      * @param request objeto con el nuevo status
      * @return 200 OK con los datos actualizados
      */
-    @PutMapping("/{id}/availability")
+    @PutMapping("/{id}/change-availability")
     @PreAuthorize("hasRole('HOST')")
     public ResponseEntity<ParkingSpaceResponse> updateAvailability(
             @PathVariable Long id,
@@ -112,7 +112,7 @@ public class ParkingSpaceController {
      *
      * @return lista de cocheras del host
      */
-    @GetMapping("/mine")
+    @GetMapping("/my-published-spaces")
     @PreAuthorize("hasRole('HOST')")
     public ResponseEntity<List<ParkingSpaceResponse>> getMyParkingSpaces() {
         return ResponseEntity.ok(parkingSpaceService.getMyParkingSpaces());
@@ -125,7 +125,7 @@ public class ParkingSpaceController {
      *
      * @return HostDashboardResponse con todas las métricas
      */
-    @GetMapping("/dashboard")
+    @GetMapping("/host-dashboard")
     @PreAuthorize("hasRole('HOST')")
     public ResponseEntity<HostDashboardResponse> getDashboard() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -144,7 +144,7 @@ public class ParkingSpaceController {
      * @param radius radio en metros (default: 1000 m)
      * @return lista de cocheras disponibles en el radio indicado
      */
-    @GetMapping("/search")
+    @GetMapping("/search-nearby")
     public ResponseEntity<List<ParkingSpaceResponse>> searchNearby(
             @RequestParam double lat,
             @RequestParam double lng,
@@ -160,7 +160,7 @@ public class ParkingSpaceController {
      * @param id ID de la cochera
      * @return 200 OK
      */
-    @PostMapping("/{id}/favorites")
+    @PostMapping("/{id}/add-to-favorites")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> addFavorite(@PathVariable Long id) {
         parkingSpaceService.addFavorite(id);
@@ -173,7 +173,7 @@ public class ParkingSpaceController {
      * @param id ID de la cochera
      * @return 204 NO CONTENT
      */
-    @DeleteMapping("/{id}/favorites")
+    @DeleteMapping("/{id}/remove-from-favorites")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> removeFavorite(@PathVariable Long id) {
         parkingSpaceService.removeFavorite(id);
@@ -185,7 +185,7 @@ public class ParkingSpaceController {
      *
      * @return lista de cocheras favoritas
      */
-    @GetMapping("/favorites")
+    @GetMapping("/my-favorite-spaces")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<List<ParkingSpaceResponse>> getFavorites() {
         return ResponseEntity.ok(parkingSpaceService.getFavorites());

@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "7662c10b-85e3-4670-bb53-e91c784ee0d8",
 		"name": "ParkShare API — Colección Completa",
-		"description": "Colección de Postman para el backend de ParkShare. Contiene todos los flujos de Autenticación, Gestión de Cocheras con geolocalización PostGIS, Reservas, Billetera Virtual, Check-in/Check-out con Código QR y Reseñas.\n\n### Configuración Inicial\n1. La variable `baseUrl` apunta a `http://localhost:8080` por defecto.\n2. La variable `token` se actualiza de forma automática al iniciar sesión exitosamente en el endpoint `POST /auth/login` gracias al script de pruebas integrado.",
+		"description": "Colección de Postman para el backend de ParkShare. Contiene todos los flujos de Autenticación, Gestión de Cocheras con geolocalización PostGIS, Reservas, Billetera Virtual, Check-in/Check-out con Código QR y Reseñas.\n\n### Configuración Inicial\n1. La variable `baseUrl` apunta a `http://localhost:8080` por defecto.\n2. La variable `token` se actualiza de forma automática al iniciar sesión exitosamente en el endpoint `POST /auth/login-user` o registro gracias al script de pruebas integrado.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -12,6 +12,25 @@
 			"item": [
 				{
 					"name": "Registrar Conductor (DRIVER)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    console.log(\"Token de Conductor guardado en {{token}}\");",
+									"}",
+									"if (jsonData && jsonData.userId) {",
+									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
+									"    console.log(\"userId guardado en {{userId}}\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -28,7 +47,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"raw": "{{baseUrl}}/api/v1/auth/register-user",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -36,7 +55,7 @@
 								"api",
 								"v1",
 								"auth",
-								"register"
+								"register-user"
 							]
 						},
 						"description": "Registra un nuevo usuario con rol DRIVER (Conductor). Inicializa su billetera virtual en 0.00 de manera automática y publica el evento de bienvenida."
@@ -45,6 +64,25 @@
 				},
 				{
 					"name": "Registrar Anfitrión (HOST)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    console.log(\"Token de Anfitrión guardado en {{token}}\");",
+									"}",
+									"if (jsonData && jsonData.userId) {",
+									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
+									"    console.log(\"userId guardado en {{userId}}\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -61,7 +99,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"raw": "{{baseUrl}}/api/v1/auth/register-user",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -69,7 +107,7 @@
 								"api",
 								"v1",
 								"auth",
-								"register"
+								"register-user"
 							]
 						},
 						"description": "Registra un nuevo usuario con rol HOST (Propietario de cochera)."
@@ -77,7 +115,7 @@
 					"response": []
 				},
 				{
-					"name": "Iniciar Sesión (Login)",
+					"name": "Iniciar Sesión Conductor",
 					"event": [
 						{
 							"listen": "test",
@@ -86,7 +124,10 @@
 									"var jsonData = pm.response.json();",
 									"if (jsonData && jsonData.token) {",
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
-									"    console.log(\"Token guardado automáticamente en la variable {{token}}\");",
+									"    console.log(\"Token de Conductor guardado automáticamente en la variable {{token}}\");",
+									"}",
+									"if (jsonData && jsonData.userId) {",
+									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
 									"}"
 								],
 								"type": "text/javascript"
@@ -109,7 +150,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"raw": "{{baseUrl}}/api/v1/auth/login-user",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -117,10 +158,61 @@
 								"api",
 								"v1",
 								"auth",
-								"login"
+								"login-user"
 							]
 						},
-						"description": "Autentica al usuario con email y contraseña, actualizando opcionalmente su token FCM para notificaciones push. Retorna un JWT válido que se guarda automáticamente en la variable de colección `token`."
+						"description": "Autentica al conductor con email y contraseña. Retorna un JWT válido que se guarda automáticamente en la variable de colección `token`."
+					},
+					"response": []
+				},
+				{
+					"name": "Iniciar Sesión Anfitrión",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    console.log(\"Token de Anfitrión guardado automáticamente en la variable {{token}}\");",
+									"}",
+									"if (jsonData && jsonData.userId) {",
+									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"host@parkshare.com\",\n  \"password\": \"SecurePassword123\",\n  \"fcmToken\": \"fcm-token-test-456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login-user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login-user"
+							]
+						},
+						"description": "Autentica al anfitrión con email y contraseña. Retorna un JWT válido que se guarda automáticamente en la variable de colección `token`."
 					},
 					"response": []
 				}
@@ -132,11 +224,29 @@
 			"item": [
 				{
 					"name": "Buscar Cocheras Cercanas (PostGIS)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && Array.isArray(jsonData) && jsonData.length > 0) {",
+									"    var firstSpace = jsonData[0];",
+									"    if (firstSpace.id) {",
+									"        pm.collectionVariables.set(\"parkingSpaceId\", firstSpace.id.toString());",
+									"        console.log(\"parkingSpaceId guardado automáticamente: \" + firstSpace.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/search?lat=-12.1221&lng=-77.0298&radius=2000",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/search-nearby?lat=-12.1221&lng=-77.0298&radius=2000",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -144,7 +254,7 @@
 								"api",
 								"v1",
 								"parking-spaces",
-								"search"
+								"search-nearby"
 							],
 							"query": [
 								{
@@ -170,6 +280,21 @@
 				},
 				{
 					"name": "Crear Cochera (HOST)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.id) {",
+									"    pm.collectionVariables.set(\"parkingSpaceId\", jsonData.id.toString());",
+									"    console.log(\"parkingSpaceId guardado de cochera creada: \" + jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -191,14 +316,15 @@
 							]
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/create",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"parking-spaces"
+								"parking-spaces",
+								"create"
 							]
 						},
 						"description": "Permite a un HOST crear una nueva cochera subiendo una foto (Cloudinary) y datos en formato multipart/form-data."
@@ -228,7 +354,7 @@
 							]
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/update",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -236,7 +362,8 @@
 								"api",
 								"v1",
 								"parking-spaces",
-								"{{parkingSpaceId}}"
+								"{{parkingSpaceId}}",
+								"update"
 							]
 						},
 						"description": "Actualiza la información y/o foto de una cochera. El usuario debe ser el HOST propietario de la misma."
@@ -258,7 +385,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/availability",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/change-availability",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -267,7 +394,7 @@
 								"v1",
 								"parking-spaces",
 								"{{parkingSpaceId}}",
-								"availability"
+								"change-availability"
 							]
 						},
 						"description": "Cambia manualmente el estado de disponibilidad (AVAILABLE, RESERVED, OCCUPIED) de una cochera. Emite una notificación en tiempo real a través de WebSocket."
@@ -280,7 +407,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/mine",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/my-published-spaces",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -288,7 +415,7 @@
 								"api",
 								"v1",
 								"parking-spaces",
-								"mine"
+								"my-published-spaces"
 							]
 						},
 						"description": "Retorna la lista de cocheras publicadas por el HOST autenticado."
@@ -301,7 +428,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/dashboard",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/host-dashboard",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -309,7 +436,7 @@
 								"api",
 								"v1",
 								"parking-spaces",
-								"dashboard"
+								"host-dashboard"
 							]
 						},
 						"description": "Obtiene las métricas agregadas del HOST (total de cocheras, reservas finalizadas, ganancias acumuladas, rating promedio e historial reciente)."
@@ -322,7 +449,7 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/favorites",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/add-to-favorites",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -331,7 +458,7 @@
 								"v1",
 								"parking-spaces",
 								"{{parkingSpaceId}}",
-								"favorites"
+								"add-to-favorites"
 							]
 						},
 						"description": "Agrega una cochera específica a la lista de favoritos del conductor autenticado."
@@ -344,7 +471,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/favorites",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/remove-from-favorites",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -353,7 +480,7 @@
 								"v1",
 								"parking-spaces",
 								"{{parkingSpaceId}}",
-								"favorites"
+								"remove-from-favorites"
 							]
 						},
 						"description": "Elimina una cochera de la lista de favoritos del conductor."
@@ -366,7 +493,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/parking-spaces/favorites",
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/my-favorite-spaces",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -374,7 +501,7 @@
 								"api",
 								"v1",
 								"parking-spaces",
-								"favorites"
+								"my-favorite-spaces"
 							]
 						},
 						"description": "Retorna todas las cocheras marcadas como favoritas por el DRIVER autenticado."
@@ -389,6 +516,21 @@
 			"item": [
 				{
 					"name": "Crear Reserva (DRIVER)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.id) {",
+									"    pm.collectionVariables.set(\"reservationId\", jsonData.id.toString());",
+									"    console.log(\"reservationId guardado de reserva creada: \" + jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -402,17 +544,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reservations",
+							"raw": "{{baseUrl}}/api/v1/reservations/create",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"reservations"
+								"reservations",
+								"create"
 							]
 						},
-						"description": "Crea una reserva en estado PENDING para una cochera disponible. Asigna automáticamente el tiempo de expiración (expiresAt) a 15 minutos en el futuro y cambia el estado de la cochera a RESERVED. Bloquea la cochera con un candado pesimista (PESSIMISTIC_WRITE) para evitar race conditions."
+						"description": "Crea una reserva en estado PENDING para una cochera disponible. Asigna automáticamente el tiempo de expiración (expiresAt) a 15 minutos en el futuro y cambia el estado de la cochera a RESERVED."
 					},
 					"response": []
 				},
@@ -422,7 +565,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reservations/my-history",
+							"raw": "{{baseUrl}}/api/v1/reservations/my-driver-history",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -430,7 +573,7 @@
 								"api",
 								"v1",
 								"reservations",
-								"my-history"
+								"my-driver-history"
 							]
 						},
 						"description": "Obtiene el historial de todas las reservas efectuadas por el DRIVER autenticado."
@@ -443,7 +586,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}",
+							"raw": "{{baseUrl}}/api/v1/reservations/detail/{{reservationId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -451,6 +594,7 @@
 								"api",
 								"v1",
 								"reservations",
+								"detail",
 								"{{reservationId}}"
 							]
 						},
@@ -464,7 +608,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}",
+							"raw": "{{baseUrl}}/api/v1/reservations/cancel/{{reservationId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -472,6 +616,7 @@
 								"api",
 								"v1",
 								"reservations",
+								"cancel",
 								"{{reservationId}}"
 							]
 						},
@@ -485,7 +630,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reservations/parking-space/{{parkingSpaceId}}",
+							"raw": "{{baseUrl}}/api/v1/reservations/by-parking-space/{{parkingSpaceId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -493,7 +638,7 @@
 								"api",
 								"v1",
 								"reservations",
-								"parking-space",
+								"by-parking-space",
 								"{{parkingSpaceId}}"
 							]
 						},
@@ -509,19 +654,34 @@
 			"item": [
 				{
 					"name": "Generar Código QR (DRIVER)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.code) {",
+									"    pm.collectionVariables.set(\"qrCode\", jsonData.code);",
+									"    console.log(\"qrCode guardado automáticamente: \" + jsonData.code);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/checkin/generate/{{reservationId}}",
+							"raw": "{{baseUrl}}/api/v1/check-in-out/generate-qr/{{reservationId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"checkin",
-								"generate",
+								"check-in-out",
+								"generate-qr",
 								"{{reservationId}}"
 							]
 						},
@@ -536,7 +696,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"code\": \"coloca-aqui-el-uuid-del-qr\"\n}",
+							"raw": "{\n  \"code\": \"{{qrCode}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -544,18 +704,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/checkin/check-in",
+							"raw": "{{baseUrl}}/api/v1/check-in-out/process-check-in",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"checkin",
-								"check-in"
+								"check-in-out",
+								"process-check-in"
 							]
 						},
-						"description": "Registra el ingreso del conductor escaneando el código QR de entrada. Valida que el código esté activo, no haya expirado y pertenezca a una reserva PENDING. Actualiza el estado de la reserva a ACTIVE, marca la cochera como OCCUPIED y registra el tiempo de inicio (`startTime`)."
+						"description": "Registra el ingreso del conductor escaneando el código QR de entrada."
 					},
 					"response": []
 				},
@@ -566,7 +726,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"code\": \"coloca-aqui-el-uuid-del-qr\"\n}",
+							"raw": "{\n  \"code\": \"{{qrCode}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -574,18 +734,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/checkin/check-out",
+							"raw": "{{baseUrl}}/api/v1/check-in-out/process-check-out",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"checkin",
-								"check-out"
+								"check-in-out",
+								"process-check-out"
 							]
 						},
-						"description": "Registra la salida del vehículo. Valida el código QR, calcula los minutos transcurridos y el costo total de acuerdo con la tarifa por hora, realiza el cobro debitando de la billetera del DRIVER y acreditando a la billetera del HOST (cobro auditado en transacciones), actualiza el estado de la reserva a FINISHED y libera la cochera (AVAILABLE). Envía el email con el resumen del consumo de forma asíncrona."
+						"description": "Registra la salida del vehículo. Valida el código QR, calcula los minutos transcurridos y el costo total de acuerdo con la tarifa por hora, realiza el cobro debitando de la billetera del DRIVER y acreditando a la billetera del HOST, actualiza el estado de la reserva a FINISHED y libera la cochera (AVAILABLE)."
 					},
 					"response": []
 				}
@@ -601,7 +761,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/wallet/balance",
+							"raw": "{{baseUrl}}/api/v1/wallet/my-balance",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -609,7 +769,7 @@
 								"api",
 								"v1",
 								"wallet",
-								"balance"
+								"my-balance"
 							]
 						},
 						"description": "Retorna el saldo de la billetera virtual del usuario autenticado."
@@ -631,7 +791,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/wallet/topup",
+							"raw": "{{baseUrl}}/api/v1/wallet/deposit",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -639,7 +799,7 @@
 								"api",
 								"v1",
 								"wallet",
-								"topup"
+								"deposit"
 							]
 						},
 						"description": "Recarga saldo a la billetera del usuario actual. Genera una transacción de auditoría con tipo TOPUP."
@@ -652,7 +812,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/wallet/transactions?page=0&size=10",
+							"raw": "{{baseUrl}}/api/v1/wallet/transaction-history?page=0&size=10",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -660,7 +820,7 @@
 								"api",
 								"v1",
 								"wallet",
-								"transactions"
+								"transaction-history"
 							],
 							"query": [
 								{
@@ -685,7 +845,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/wallet/transactions/type/TOPUP?page=0&size=10",
+							"raw": "{{baseUrl}}/api/v1/wallet/transaction-history/by-type/TOPUP?page=0&size=10",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -693,8 +853,8 @@
 								"api",
 								"v1",
 								"wallet",
-								"transactions",
-								"type",
+								"transaction-history",
+								"by-type",
 								"TOPUP"
 							],
 							"query": [
@@ -718,7 +878,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/wallet/earnings-summary",
+							"raw": "{{baseUrl}}/api/v1/wallet/host-earnings-summary",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -726,7 +886,7 @@
 								"api",
 								"v1",
 								"wallet",
-								"earnings-summary"
+								"host-earnings-summary"
 							]
 						},
 						"description": "Permite al HOST ver sus métricas de cobros, incluyendo ganancias totales del mes y cantidad total de cobros recibidos."
@@ -754,14 +914,15 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reviews",
+							"raw": "{{baseUrl}}/api/v1/reviews/create",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"reviews"
+								"reviews",
+								"create"
 							]
 						},
 						"description": "Crea una reseña sobre el espacio y la experiencia de estacionamiento una vez finalizada la reserva (status FINISHED)."
@@ -774,7 +935,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reviews/parking-space/{{parkingSpaceId}}",
+							"raw": "{{baseUrl}}/api/v1/reviews/by-parking-space/{{parkingSpaceId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -782,7 +943,7 @@
 								"api",
 								"v1",
 								"reviews",
-								"parking-space",
+								"by-parking-space",
 								"{{parkingSpaceId}}"
 							]
 						},
@@ -796,7 +957,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/reviews/user/{{userId}}",
+							"raw": "{{baseUrl}}/api/v1/reviews/by-user/{{userId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -804,7 +965,7 @@
 								"api",
 								"v1",
 								"reviews",
-								"user",
+								"by-user",
 								"{{userId}}"
 							]
 						},
@@ -869,6 +1030,11 @@
 		{
 			"key": "userId",
 			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "qrCode",
+			"value": "qr-uuid-aqui",
 			"type": "string"
 		}
 	]
