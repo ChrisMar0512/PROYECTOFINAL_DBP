@@ -22,6 +22,10 @@
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
 									"    console.log(\"Token de Conductor guardado en {{token}}\");",
 									"}",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+									"    console.log(\"refreshToken guardado en {{refreshToken}}\");",
+									"}",
 									"if (jsonData && jsonData.userId) {",
 									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
 									"    console.log(\"userId guardado en {{userId}}\");",
@@ -73,6 +77,10 @@
 									"if (jsonData && jsonData.token) {",
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
 									"    console.log(\"Token de Anfitrión guardado en {{token}}\");",
+									"}",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+									"    console.log(\"refreshToken guardado en {{refreshToken}}\");",
 									"}",
 									"if (jsonData && jsonData.userId) {",
 									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
@@ -126,6 +134,10 @@
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
 									"    console.log(\"Token de Conductor guardado automáticamente en la variable {{token}}\");",
 									"}",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+									"    console.log(\"refreshToken guardado en {{refreshToken}}\");",
+									"}",
 									"if (jsonData && jsonData.userId) {",
 									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
 									"}"
@@ -177,6 +189,10 @@
 									"    pm.collectionVariables.set(\"token\", jsonData.token);",
 									"    console.log(\"Token de Anfitrión guardado automáticamente en la variable {{token}}\");",
 									"}",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+									"    console.log(\"refreshToken guardado en {{refreshToken}}\");",
+									"}",
 									"if (jsonData && jsonData.userId) {",
 									"    pm.collectionVariables.set(\"userId\", jsonData.userId.toString());",
 									"}"
@@ -213,6 +229,58 @@
 							]
 						},
 						"description": "Autentica al anfitrión con email y contraseña. Retorna un JWT válido que se guarda automáticamente en la variable de colección `token`."
+					},
+					"response": []
+				},
+				{
+					"name": "Renovar Token de Acceso",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    console.log(\"Nuevo token de acceso guardado en {{token}}\");",
+									"}",
+									"if (jsonData && jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+									"    console.log(\"refreshToken actualizado en {{refreshToken}}\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh-token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"refresh-token"
+							]
+						},
+						"description": "Renueva el JWT de acceso utilizando el refresh token guardado en la variable {{refreshToken}}."
 					},
 					"response": []
 				}
@@ -505,6 +573,50 @@
 							]
 						},
 						"description": "Retorna todas las cocheras marcadas como favoritas por el DRIVER autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Ver Detalle de Cochera",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/detail/{{parkingSpaceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"detail",
+								"{{parkingSpaceId}}"
+							]
+						},
+						"description": "Retorna el detalle completo de una cochera específica por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Cochera (HOST)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/delete/{{parkingSpaceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"delete",
+								"{{parkingSpaceId}}"
+							]
+						},
+						"description": "Da de baja y elimina una cochera publicada. Requiere ser el HOST dueño de la misma."
 					},
 					"response": []
 				}

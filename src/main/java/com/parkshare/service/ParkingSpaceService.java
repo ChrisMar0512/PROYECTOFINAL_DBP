@@ -4,6 +4,7 @@ import com.parkshare.dto.*;
 import com.parkshare.dto.HostDashboardResponse.ReservationSummary;
 import com.parkshare.entity.*;
 import com.parkshare.entity.ParkingSpace.ParkingSpaceStatus;
+import com.parkshare.exception.ResourceNotFoundException;
 import com.parkshare.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -298,6 +299,52 @@ public class ParkingSpaceService {
         return dashboard;
     }
 
+    /**
+     * Retorna el detalle de una cochera específica por su ID.
+     *
+     * @param id ID de la cochera
+     * @return DTO con la información de la cochera
+     */
+    @Transactional(readOnly = true)
+    public ParkingSpaceResponse getParkingSpaceById(Long id) {
+        ParkingSpace space = findSpaceById(id);
+        return mapToResponse(space);
+    }
+
+    /**
+     * Elimina una cochera del sistema. Solo el HOST dueño puede eliminarla.
+     * Si la cochera tiene reservas activas o pendientes, se lanza una excepción.
+     *
+     * @param id ID de la cochera a eliminar
+     */
+    public void deleteParkingSpace(Long id) {
+        ParkingSpace space = findSpaceAndVerifyOwnership(id);
+
+        // Verificar si la cochera tiene reservas activas o pendientes
+        long activeReservations = reservationRepository.findAll().stream()
+                .filter(r -> r.getParkingSpace().getId().equals(id) && 
+                        (r.getStatus() == Reservation.ReservationStatus.PENDING || 
+                         r.getStatus() == Reservation.ReservationStatus.ACTIVE))
+                .count();
+
+        if (activeReservations > 0) {
+            throw new IllegalStateException("No se puede eliminar la cochera porque tiene reservas activas o pendientes.");
+        }
+
+        // Eliminar referencias en favoritos primero
+        space.getFavoritedBy().clear();
+        parkingSpaceRepository.save(space);
+
+        // Eliminar foto de Cloudinary si existe
+        if (space.getCloudinaryPublicId() != null) {
+            cloudinaryService.deleteImage(space.getCloudinaryPublicId());
+            log.info("Foto de cochera eliminada de Cloudinary: {}", space.getCloudinaryPublicId());
+        }
+
+        parkingSpaceRepository.delete(space);
+        log.info("Cochera de baja id={}", id);
+    }
+
     // ==================== Métodos Auxiliares ====================
 
     /**
@@ -315,7 +362,7 @@ public class ParkingSpaceService {
      */
     private ParkingSpace findSpaceById(Long id) {
         return parkingSpaceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cochera no encontrada con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Cochera no encontrada con id: " + id));
     }
 
     /**

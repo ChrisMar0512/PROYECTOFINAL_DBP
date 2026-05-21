@@ -14,6 +14,8 @@ public class AuthResponse {
     /** JWT firmado — el cliente debe enviarlo en el header Authorization: Bearer <token> */
     private String token;
 
+    private String refreshToken;
+
     private Long userId;
     private String name;
     private String email;
@@ -25,5 +27,10 @@ public class AuthResponse {
         this.name = user.getName();
         this.email = user.getEmail();
         this.role = user.getRole().name();
+    }
+
+    public AuthResponse(String token, String refreshToken, User user) {
+        this(token, user);
+        this.refreshToken = refreshToken;
     }
 }

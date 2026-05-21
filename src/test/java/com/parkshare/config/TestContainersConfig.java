@@ -24,11 +24,25 @@ public class TestContainersConfig {
 
     @Container
     static PostgreSQLContainer<?> postgres =
-            new PostgreSQLContainer<>("postgis/postgis:16-3.4-alpine")
+            new PostgreSQLContainer<>(org.locationtech.jts.util.UniqueCoordinateArrayFilter.class.getClassLoader() != null ? 
+                    org.testcontainers.utility.DockerImageName.parse("postgis/postgis:16-3.4-alpine").asCompatibleSubstituteFor("postgres") :
+                    org.testcontainers.utility.DockerImageName.parse("postgis/postgis:16-3.4-alpine").asCompatibleSubstituteFor("postgres"))
                     .withDatabaseName("parkshare_test")
                     .withUsername("test")
                     .withPassword("test")
                     .withInitScript("init-postgis.sql");
+
+    static {
+        System.setProperty("TESTCONTAINERS_RYUK_DISABLED", "true");
+        System.setProperty("testcontainers.ryuk.disabled", "true");
+        postgres.start();
+        System.setProperty("spring.datasource.url", postgres.getJdbcUrl());
+        System.setProperty("spring.datasource.username", postgres.getUsername());
+        System.setProperty("spring.datasource.password", postgres.getPassword());
+        System.setProperty("spring.datasource.driver-class-name", "org.postgresql.Driver");
+        System.setProperty("spring.jpa.database-platform", "org.hibernate.dialect.PostgreSQLDialect");
+        System.setProperty("spring.jpa.hibernate.ddl-auto", "create-drop");
+    }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {

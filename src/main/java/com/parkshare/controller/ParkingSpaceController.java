@@ -190,4 +190,28 @@ public class ParkingSpaceController {
     public ResponseEntity<List<ParkingSpaceResponse>> getFavorites() {
         return ResponseEntity.ok(parkingSpaceService.getFavorites());
     }
+
+    /**
+     * Retorna el detalle de una cochera específica.
+     *
+     * @param id ID de la cochera
+     * @return ParkingSpaceResponse con la info detallada
+     */
+    @GetMapping("/detail/{id}")
+    public ResponseEntity<ParkingSpaceResponse> getParkingSpace(@PathVariable Long id) {
+        return ResponseEntity.ok(parkingSpaceService.getParkingSpaceById(id));
+    }
+
+    /**
+     * Da de baja (elimina) una cochera. Solo el HOST dueño puede darla de baja.
+     *
+     * @param id ID de la cochera
+     * @return 204 No Content
+     */
+    @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasRole('HOST')")
+    public ResponseEntity<Void> deleteParkingSpace(@PathVariable Long id) {
+        parkingSpaceService.deleteParkingSpace(id);
+        return ResponseEntity.noContent().build();
+    }
 }

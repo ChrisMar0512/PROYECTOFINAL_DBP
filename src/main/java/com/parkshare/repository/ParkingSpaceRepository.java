@@ -35,8 +35,8 @@ public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long
             SELECT * FROM parking_space
             WHERE status = 'AVAILABLE'
               AND ST_DWithin(
-                    location,
-                    ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                    CAST(location AS geography),
+                    CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography),
                     :radiusMeters
                   )
             """,
