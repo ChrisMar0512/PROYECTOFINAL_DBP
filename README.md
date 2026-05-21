@@ -9,6 +9,7 @@
 * **Institución:** Universidad de Ingeniería y Tecnología (UTEC) — Lima, Perú
 * **Desarrollador / Integrante:** 
   * Christian Mar (christian.mar@utec.edu.pe)
+  * Adrian Rojas (adrian.rojas@utec.edu.pe)
 
 ---
 
