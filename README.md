@@ -25,6 +25,7 @@
 5. [Descripción de la Solución](#-descripción-de-la-solución)
    * [Funcionalidades Implementadas](#funcionalidades-implementadas)
    * [Tecnologías Utilizadas](#tecnologías-utilizadas)
+   * [Arquitectura del Sistema](#arquitectura-del-sistema)
 6. [Modelo de Entidades](#-modelo-de-entidades)
    * [Diagrama Entidad-Relación](#diagrama-entidad-relación)
    * [Descripción de Entidades](#descripción-de-entidades)
@@ -52,7 +53,9 @@
     * [Requisitos Previos](#requisitos-previos)
     * [Cómo Ejecutar con Docker Compose](#cómo-ejecutar-con-docker-compose)
     * [Variables de Entorno](#variables-de-entorno)
+    * [Despliegue en la Nube](#despliegue-en-la-nube)
 14. [Detalle de Endpoints de la API](#-detalle-de-endpoints-de-la-api)
+15. [Hojas de Ruta: Flujo de Uso Correcto](#-hojas-de-ruta-flujo-de-uso-correcto)
 
 ---
 
@@ -102,6 +105,134 @@ ParkShare es un marketplace de emparejamiento bajo demanda estructurado en micro
 * **Almacenamiento de Imágenes:** Cloudinary SDK 1.36.0 para gestión remota de fotos de cocheras.
 * **Mensajería y Notificaciones:** JavaMailSender con Thymeleaf para emails y Firebase Admin SDK 9.2.0.
 * **Contenedores y Pruebas:** Docker + Docker Compose y TestContainers 1.19.7 para persistencia real en base de datos PostgreSQL durante los tests.
+
+### Arquitectura del Sistema
+El backend de ParkShare sigue una arquitectura limpia y desacoplada en capas (Controller-Service-Repository), integrada con bases de datos geoespaciales y diversos servicios externos asíncronos y en la nube.
+
+A continuación se presenta el diagrama de arquitectura del sistema:
+
+```mermaid
+graph TD
+    %% Estilos de los nodos
+    classDef client fill:#eceff1,stroke:#37474f,stroke-width:2px;
+    classDef controller fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef repository fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px;
+    classDef external fill:#fff8e1,stroke:#f9a825,stroke-width:2px;
+    classDef db fill:#ffe0b2,stroke:#ef6c00,stroke-width:2px;
+
+    %% Nodos de Cliente
+    subgraph Clientes ["Capa de Cliente / Presentación"]
+        Postman["Postman / API Clients"]:::client
+        WebClient["Aplicación Mobile / Web Browser"]:::client
+    end
+
+    %% Capa de Seguridad y Controladores
+    subgraph CapaAPI ["Capa de Entrada & Seguridad"]
+        JwtFilter["JwtAuthenticationFilter"]:::controller
+        SpringSecurity["Spring Security Config"]:::controller
+        AuthController["AuthController"]:::controller
+        ParkingSpaceController["ParkingSpaceController"]:::controller
+        ReservationController["ReservationController"]:::controller
+        WalletController["WalletController"]:::controller
+        CheckInOutController["CheckInOutController"]:::controller
+        ReviewController["ReviewController"]:::controller
+        WebSocketHandler["WebSocket / STOMP Updates"]:::controller
+    end
+
+    %% Capa de Negocio
+    subgraph CapaNegocio ["Capa de Servicios (Lógica de Negocio)"]
+        AuthService["AuthService"]:::service
+        ParkingSpaceService["ParkingSpaceService"]:::service
+        ReservationService["ReservationService"]:::service
+        WalletService["WalletService"]:::service
+        CheckInOutService["CheckInOutService"]:::service
+        ReviewService["ReviewService"]:::service
+        EmailService["EmailService (Async)"]:::service
+        FCMService["FirebaseNotificationService (Async)"]:::service
+        Scheduler["ReservationScheduler (Scheduled)"]:::service
+    end
+
+    %% Capa de Datos
+    subgraph CapaDatos ["Capa de Repositorios (Persistencia)"]
+        UserRepository["UserRepository"]:::repository
+        ParkingSpaceRepository["ParkingSpaceRepository"]:::repository
+        ReservationRepository["ReservationRepository"]:::repository
+        WalletRepository["WalletRepository"]:::repository
+        WalletTransactionRepository["WalletTransactionRepository"]:::repository
+        QRCodeRepository["QRCodeRepository"]:::repository
+        ReviewRepository["ReviewRepository"]:::repository
+    end
+
+    %% Infraestructura y Terceros
+    subgraph CapaInfra ["Infraestructura & Servicios Externos"]
+        PostgreSQL[("PostgreSQL + PostGIS Database")]:::db
+        Cloudinary["Cloudinary (Image Storage)"]:::external
+        Firebase["Firebase (Push Notifications)"]:::external
+        SMTP["Gmail SMTP (Email Server)"]:::external
+    end
+
+    %% Flujos de Seguridad y Solicitudes
+    Postman -->|Peticiones HTTP REST| JwtFilter
+    WebClient -->|Peticiones HTTP / WebSockets| JwtFilter
+    JwtFilter --> SpringSecurity
+    SpringSecurity --> AuthController
+    SpringSecurity --> ParkingSpaceController
+    SpringSecurity --> ReservationController
+    SpringSecurity --> WalletController
+    SpringSecurity --> CheckInOutController
+    SpringSecurity --> ReviewController
+    SpringSecurity --> WebSocketHandler
+
+    %% Flujos Controladores -> Servicios
+    AuthController --> AuthService
+    ParkingSpaceController --> ParkingSpaceService
+    ReservationController --> ReservationService
+    WalletController --> WalletService
+    CheckInOutController --> CheckInOutService
+    ReviewController --> ReviewService
+    WebSocketHandler --> ParkingSpaceService
+
+    %% Relaciones Lógicas entre Servicios
+    AuthService --> UserRepository
+    AuthService --> WalletService
+    
+    ParkingSpaceService --> ParkingSpaceRepository
+    ParkingSpaceService --> Cloudinary
+    
+    ReservationService --> ReservationRepository
+    ReservationService --> ParkingSpaceRepository
+    ReservationService --> UserRepository
+    
+    WalletService --> WalletRepository
+    WalletService --> WalletTransactionRepository
+    
+    CheckInOutService --> QRCodeRepository
+    CheckInOutService --> ReservationRepository
+    CheckInOutService --> WalletService
+    CheckInOutService --> EmailService
+    CheckInOutService --> FCMService
+    
+    ReviewService --> ReviewRepository
+    ReviewService --> ReservationRepository
+    ReviewService --> UserRepository
+
+    Scheduler --> ReservationService
+    Scheduler --> FCMService
+
+    %% Flujos Repositorios -> Base de Datos
+    UserRepository --> PostgreSQL
+    ParkingSpaceRepository --> PostgreSQL
+    ReservationRepository --> PostgreSQL
+    WalletRepository --> PostgreSQL
+    WalletTransactionRepository --> PostgreSQL
+    QRCodeRepository --> PostgreSQL
+    ReviewRepository --> PostgreSQL
+
+    %% Flujos a Servicios Externos
+    EmailService --> SMTP
+    FCMService --> Firebase
+```
 
 ---
 
@@ -385,6 +516,11 @@ Configurar las siguientes variables en el archivo `.env`:
 | `APP_JWT_SECRET` | Firma del JWT (clave robusta de 256 bits) | *(Generar en producción)* |
 | `APP_JWT_EXPIRATION` | Tiempo de expiración del JWT (milisegundos) | `86400000` (24 horas) |
 
+### Despliegue en la Nube
+El proyecto está preparado con contenedorización de Docker para poder ser desplegado en servicios PaaS en la nube:
+* **Enlace de Producción (Railway / Render):** [https://parkshare-production.up.railway.app](https://parkshare-production.up.railway.app) *(Nota: Reemplazar con el subdominio real una vez aprovisionada la instancia)*
+* **Base de Datos en Producción:** Se recomienda un servicio Postgres gestionado con la extensión PostGIS activa (como Supabase, Neon o Aiven) conectándose mediante la variable de entorno `SPRING_DATASOURCE_URL`.
+
 ---
 
 ## 📡 Detalle de Endpoints de la API
@@ -535,3 +671,104 @@ Base URL del proyecto: `/api/v1`
     "status": "AVAILABLE"
   }
   ```
+
+---
+
+## 🗺️ Hojas de Ruta: Flujo de Uso Correcto
+
+Para probar y evaluar la API en Postman de forma lógica y exitosa, sigue estas secuencias ordenadas de endpoints:
+
+### 🚗 Flujo del Conductor (`DRIVER`)
+
+Este flujo simula el registro, recarga de dinero, búsqueda, reserva, ingreso/salida de la cochera y posterior calificación:
+
+1. **Registro de Conductor**
+   * **Endpoint:** `POST /api/v1/auth/register-user`
+   * **Cuerpo:** JSON con los datos del conductor, indicando `"role": "DRIVER"`.
+   * **Propósito:** Crea la cuenta y auto-inicializa su billetera virtual (`Wallet`) con saldo $0.00.
+
+2. **Inicio de Sesión**
+   * **Endpoint:** `POST /api/v1/auth/login-user`
+   * **Cuerpo:** Credenciales registradas.
+   * **Resultado:** Obtener el token JWT. (Postman lo captura automáticamente en la variable `{{token}}`).
+
+3. **Recarga de Saldo**
+   * **Endpoint:** `POST /api/v1/wallet/deposit`
+   * **Cuerpo:** JSON con el monto positivo a recargar (ej. `{"amount": 100.00}`).
+   * **Propósito:** Cargar saldo suficiente a la billetera virtual para poder pagar futuras reservas de cocheras.
+
+4. **Búsqueda Geoespacial de Cocheras Cercanas**
+   * **Endpoint:** `GET /api/v1/parking-spaces/search-nearby`
+   * **Parámetros:** Coordenadas GPS y radio en metros (ej. `?lat=-12.1221&lng=-77.0298&radius=2000`).
+   * **Resultado:** Lista de cocheras disponibles en el radio de búsqueda.
+
+5. **Crear Reserva**
+   * **Endpoint:** `POST /api/v1/reservations/create`
+   * **Cuerpo:** JSON indicando el ID de la cochera deseada (`parkingSpaceId`).
+   * **Resultado:** Crea la reserva en estado `PENDING` e inicia un cronómetro de 15 minutos. Si expira, la reserva se cancela sola.
+
+6. **Generar Código QR de Check-in**
+   * **Endpoint:** `POST /api/v1/check-in-out/generate-qr/{reservationId}`
+   * **Resultado:** Genera una imagen QR y un UUID de acceso. (Postman lo guarda en `{{qrCode}}`).
+
+7. **Procesar Check-in (Ingreso)**
+   * **Endpoint:** `POST /api/v1/check-in-out/process-check-in`
+   * **Cuerpo:** JSON con el valor `{"code": "{{qrCode}}"}`.
+   * **Resultado:** Cambia el estado de la reserva a `ACTIVE`, la cochera a `OCCUPIED` e inicia el tiempo de cobro en tiempo real.
+
+8. **Procesar Check-out (Salida y Pago)**
+   * **Endpoint:** `POST /api/v1/check-in-out/process-check-out`
+   * **Cuerpo:** JSON con el valor `{"code": "{{qrCode}}"}`.
+   * **Resultado:** Calcula los minutos de uso, realiza el cobro del saldo de la billetera, actualiza la reserva a `FINISHED` y libera la cochera poniéndola de nuevo `AVAILABLE`. Envía un correo de resumen del cobro.
+
+9. **Crear Reseña y Calificación**
+   * **Endpoint:** `POST /api/v1/reviews/create`
+   * **Cuerpo:** JSON con `reservationId`, calificación (`rating` del 1 al 5) y comentario.
+   * **Propósito:** Calificar la cochera una vez culminado el estacionamiento.
+
+10. **Consultar Historial Personal**
+    * **Endpoints:** 
+      * `GET /api/v1/reservations/my-driver-history` (Historial de sus reservas).
+      * `GET /api/v1/wallet/transaction-history` (Historial detallado de recargas y cobros).
+
+---
+
+### 🏡 Flujo del Anfitrión (`HOST`)
+
+Este flujo simula el registro del anfitrión, la publicación de su espacio, el control de disponibilidad y el monitoreo de sus reservas y ganancias acumuladas:
+
+1. **Registro de Anfitrión**
+   * **Endpoint:** `POST /api/v1/auth/register-user`
+   * **Cuerpo:** JSON con los datos del anfitrión, indicando `"role": "HOST"`.
+
+2. **Inicio de Sesión**
+   * **Endpoint:** `POST /api/v1/auth/login-user`
+   * **Cuerpo:** Credenciales registradas.
+   * **Resultado:** Obtener el token JWT. (Postman lo captura automáticamente en la variable `{{token}}`).
+
+3. **Publicar Cochera**
+   * **Endpoint:** `POST /api/v1/parking-spaces/create`
+   * **Cuerpo:** Datos de la cochera (título, precio por hora, dirección, ubicación GPS y foto).
+   * **Propósito:** Publicar un espacio en el marketplace para que los conductores puedan reservarlo.
+
+4. **Ver Cocheras Publicadas**
+   * **Endpoint:** `GET /api/v1/parking-spaces/my-published-spaces`
+   * **Propósito:** Listar todos los espacios que el anfitrión ha publicado en la plataforma.
+
+5. **Actualizar Datos de Cochera**
+   * **Endpoint:** `PUT /api/v1/parking-spaces/{id}/update`
+   * **Cuerpo:** Datos a actualizar (título, descripción, precio, etc.).
+
+6. **Cambiar Disponibilidad Manualmente**
+   * **Endpoint:** `PUT /api/v1/parking-spaces/{id}/change-availability`
+   * **Cuerpo:** Estado deseado (`AVAILABLE` u `OCCUPIED`).
+   * **Propósito:** Modificar el estado del espacio fuera de los flujos automáticos de reserva.
+
+7. **Ver Reservas de sus Cocheras**
+   * **Endpoint:** `GET /api/v1/reservations/by-parking-space/{parkingSpaceId}`
+   * **Propósito:** Consultar las reservas pasadas y activas de su cochera para ver qué conductores la han reservado o usado.
+
+8. **Consultar Dashboard de Ganancias**
+   * **Endpoints:**
+     * `GET /api/v1/parking-spaces/host-dashboard` (Métricas generales de reservas y visitas).
+     * `GET /api/v1/wallet/host-earnings-summary` (Resumen financiero de cobros acumulados por rentar sus cocheras).
