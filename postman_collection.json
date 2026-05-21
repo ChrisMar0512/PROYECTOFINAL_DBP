@@ -1,0 +1,875 @@
+{
+	"info": {
+		"_postman_id": "7662c10b-85e3-4670-bb53-e91c784ee0d8",
+		"name": "ParkShare API — Colección Completa",
+		"description": "Colección de Postman para el backend de ParkShare. Contiene todos los flujos de Autenticación, Gestión de Cocheras con geolocalización PostGIS, Reservas, Billetera Virtual, Check-in/Check-out con Código QR y Reseñas.\n\n### Configuración Inicial\n1. La variable `baseUrl` apunta a `http://localhost:8080` por defecto.\n2. La variable `token` se actualiza de forma automática al iniciar sesión exitosamente en el endpoint `POST /auth/login` gracias al script de pruebas integrado.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"description": "Módulo de registro e inicio de sesión. No requiere autenticación previa.",
+			"item": [
+				{
+					"name": "Registrar Conductor (DRIVER)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Christian Conductor\",\n  \"email\": \"driver@parkshare.com\",\n  \"password\": \"SecurePassword123\",\n  \"phone\": \"+51987654321\",\n  \"role\": \"DRIVER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Registra un nuevo usuario con rol DRIVER (Conductor). Inicializa su billetera virtual en 0.00 de manera automática y publica el evento de bienvenida."
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar Anfitrión (HOST)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Christian Anfitrion\",\n  \"email\": \"host@parkshare.com\",\n  \"password\": \"SecurePassword123\",\n  \"phone\": \"+51999999999\",\n  \"role\": \"HOST\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Registra un nuevo usuario con rol HOST (Propietario de cochera)."
+					},
+					"response": []
+				},
+				{
+					"name": "Iniciar Sesión (Login)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    console.log(\"Token guardado automáticamente en la variable {{token}}\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"driver@parkshare.com\",\n  \"password\": \"SecurePassword123\",\n  \"fcmToken\": \"fcm-token-test-123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Autentica al usuario con email y contraseña, actualizando opcionalmente su token FCM para notificaciones push. Retorna un JWT válido que se guarda automáticamente en la variable de colección `token`."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Parking Spaces",
+			"description": "Módulo de gestión y búsqueda de espacios de estacionamiento.",
+			"item": [
+				{
+					"name": "Buscar Cocheras Cercanas (PostGIS)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/search?lat=-12.1221&lng=-77.0298&radius=2000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"search"
+							],
+							"query": [
+								{
+									"key": "lat",
+									"value": "-12.1221",
+									"description": "Latitud del centro de búsqueda (ej. Miraflores, Lima)"
+								},
+								{
+									"key": "lng",
+									"value": "-77.0298",
+									"description": "Longitud del centro de búsqueda"
+								},
+								{
+									"key": "radius",
+									"value": "2000",
+									"description": "Radio de búsqueda en metros (ej. 2000m = 2km)"
+								}
+							]
+						},
+						"description": "Busca cocheras en estado AVAILABLE en un radio específico utilizando la base de datos geoespacial PostGIS."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Cochera (HOST)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "data",
+									"value": "{\n  \"title\": \"Cochera Residencial Miraflores Central\",\n  \"description\": \"Estacionamiento techado, vigilado 24/7 con control de accesos.\",\n  \"address\": \"Calle Alcanfores 456, Miraflores\",\n  \"pricePerHour\": 6.50,\n  \"latitude\": -12.1221,\n  \"longitude\": -77.0298,\n  \"features\": [\"Vigilancia\", \"Techado\", \"Cámara de Seguridad\"]\n}",
+									"description": "JSON de metadata de la cochera",
+									"type": "text"
+								},
+								{
+									"key": "photo",
+									"description": "Archivo de imagen de la cochera (MultipartFile opcional)",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces"
+							]
+						},
+						"description": "Permite a un HOST crear una nueva cochera subiendo una foto (Cloudinary) y datos en formato multipart/form-data."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Cochera (HOST)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "data",
+									"value": "{\n  \"title\": \"Cochera Residencial Miraflores Premium\",\n  \"description\": \"Estacionamiento techado con cargador eléctrico para autos híbridos/eléctricos.\",\n  \"address\": \"Calle Alcanfores 456, Miraflores\",\n  \"pricePerHour\": 7.50,\n  \"latitude\": -12.1221,\n  \"longitude\": -77.0298,\n  \"features\": [\"Vigilancia\", \"Techado\", \"Cargador Eléctrico\"]\n}",
+									"description": "JSON de actualización de la cochera",
+									"type": "text"
+								},
+								{
+									"key": "photo",
+									"description": "Nueva foto de la cochera (reemplaza la anterior si se provee)",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"{{parkingSpaceId}}"
+							]
+						},
+						"description": "Actualiza la información y/o foto de una cochera. El usuario debe ser el HOST propietario de la misma."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Disponibilidad (HOST)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"AVAILABLE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/availability",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"{{parkingSpaceId}}",
+								"availability"
+							]
+						},
+						"description": "Cambia manualmente el estado de disponibilidad (AVAILABLE, RESERVED, OCCUPIED) de una cochera. Emite una notificación en tiempo real a través de WebSocket."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Mis Cocheras (HOST)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/mine",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"mine"
+							]
+						},
+						"description": "Retorna la lista de cocheras publicadas por el HOST autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Dashboard del Host (HOST)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/dashboard",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"dashboard"
+							]
+						},
+						"description": "Obtiene las métricas agregadas del HOST (total de cocheras, reservas finalizadas, ganancias acumuladas, rating promedio e historial reciente)."
+					},
+					"response": []
+				},
+				{
+					"name": "Agregar a Favoritos (DRIVER)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/favorites",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"{{parkingSpaceId}}",
+								"favorites"
+							]
+						},
+						"description": "Agrega una cochera específica a la lista de favoritos del conductor autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Quitar de Favoritos (DRIVER)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/{{parkingSpaceId}}/favorites",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"{{parkingSpaceId}}",
+								"favorites"
+							]
+						},
+						"description": "Elimina una cochera de la lista de favoritos del conductor."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Favoritos (DRIVER)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/parking-spaces/favorites",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"parking-spaces",
+								"favorites"
+							]
+						},
+						"description": "Retorna todas las cocheras marcadas como favoritas por el DRIVER autenticado."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reservations",
+			"description": "Módulo para la creación, consulta y cancelación de reservas de estacionamiento.",
+			"item": [
+				{
+					"name": "Crear Reserva (DRIVER)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"parkingSpaceId\": {{parkingSpaceId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reservations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reservations"
+							]
+						},
+						"description": "Crea una reserva en estado PENDING para una cochera disponible. Asigna automáticamente el tiempo de expiración (expiresAt) a 15 minutos en el futuro y cambia el estado de la cochera a RESERVED. Bloquea la cochera con un candado pesimista (PESSIMISTIC_WRITE) para evitar race conditions."
+					},
+					"response": []
+				},
+				{
+					"name": "Historial de Reservas (DRIVER)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reservations/my-history",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reservations",
+								"my-history"
+							]
+						},
+						"description": "Obtiene el historial de todas las reservas efectuadas por el DRIVER autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Detalle de una Reserva",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reservations",
+								"{{reservationId}}"
+							]
+						},
+						"description": "Retorna los detalles completos de una reserva específica."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancelar Reserva (DRIVER)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reservations",
+								"{{reservationId}}"
+							]
+						},
+						"description": "Permite al conductor cancelar una reserva en estado PENDING. La cochera vuelve a estar AVAILABLE y se cancela la expiración."
+					},
+					"response": []
+				},
+				{
+					"name": "Historial por Cochera (HOST)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reservations/parking-space/{{parkingSpaceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reservations",
+								"parking-space",
+								"{{parkingSpaceId}}"
+							]
+						},
+						"description": "Permite a un HOST ver el historial completo de reservas asociadas a una de sus cocheras."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Check-in & Check-out",
+			"description": "Proceso físico de ingreso y salida del estacionamiento utilizando códigos QR generados dinámicamente.",
+			"item": [
+				{
+					"name": "Generar Código QR (DRIVER)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/checkin/generate/{{reservationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"checkin",
+								"generate",
+								"{{reservationId}}"
+							]
+						},
+						"description": "Genera el registro del código QR dinámico para la reserva activa con un UUID único y expiración a 30 minutos. Retorna el UUID y la representación gráfica en base64 de la imagen del QR generada con ZXing."
+					},
+					"response": []
+				},
+				{
+					"name": "Hacer Check-In",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"coloca-aqui-el-uuid-del-qr\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/checkin/check-in",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"checkin",
+								"check-in"
+							]
+						},
+						"description": "Registra el ingreso del conductor escaneando el código QR de entrada. Valida que el código esté activo, no haya expirado y pertenezca a una reserva PENDING. Actualiza el estado de la reserva a ACTIVE, marca la cochera como OCCUPIED y registra el tiempo de inicio (`startTime`)."
+					},
+					"response": []
+				},
+				{
+					"name": "Hacer Check-Out",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"coloca-aqui-el-uuid-del-qr\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/checkin/check-out",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"checkin",
+								"check-out"
+							]
+						},
+						"description": "Registra la salida del vehículo. Valida el código QR, calcula los minutos transcurridos y el costo total de acuerdo con la tarifa por hora, realiza el cobro debitando de la billetera del DRIVER y acreditando a la billetera del HOST (cobro auditado en transacciones), actualiza el estado de la reserva a FINISHED y libera la cochera (AVAILABLE). Envía el email con el resumen del consumo de forma asíncrona."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Wallet",
+			"description": "Módulo financiero para la consulta de saldos, recargas e historial de auditoría de transacciones.",
+			"item": [
+				{
+					"name": "Consultar Saldo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wallet/balance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"balance"
+							]
+						},
+						"description": "Retorna el saldo de la billetera virtual del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Recargar Saldo (TOPUP)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 50.00\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wallet/topup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"topup"
+							]
+						},
+						"description": "Recarga saldo a la billetera del usuario actual. Genera una transacción de auditoría con tipo TOPUP."
+					},
+					"response": []
+				},
+				{
+					"name": "Historial de Transacciones",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wallet/transactions?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Número de página (0 es la primera)"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "Elementos por página"
+								}
+							]
+						},
+						"description": "Retorna el historial paginado de transacciones del usuario, ordenadas de más reciente a más antigua."
+					},
+					"response": []
+				},
+				{
+					"name": "Historial por Tipo de Transacción",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wallet/transactions/type/TOPUP?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"transactions",
+								"type",
+								"TOPUP"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retorna las transacciones del usuario filtradas por el tipo especificado en la ruta (TOPUP, CHARGE, REFUND)."
+					},
+					"response": []
+				},
+				{
+					"name": "Resumen de Ganancias (HOST)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wallet/earnings-summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"earnings-summary"
+							]
+						},
+						"description": "Permite al HOST ver sus métricas de cobros, incluyendo ganancias totales del mes y cantidad total de cobros recibidos."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reviews",
+			"description": "Módulo de reputación y reseñas de cocheras y usuarios.",
+			"item": [
+				{
+					"name": "Crear Reseña (DRIVER)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reservationId\": {{reservationId}},\n  \"rating\": 5,\n  \"comment\": \"Todo estuvo excelente. Cochera techada y la atención muy amable.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews"
+							]
+						},
+						"description": "Crea una reseña sobre el espacio y la experiencia de estacionamiento una vez finalizada la reserva (status FINISHED)."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Reseñas por Cochera",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/parking-space/{{parkingSpaceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews",
+								"parking-space",
+								"{{parkingSpaceId}}"
+							]
+						},
+						"description": "Obtiene la lista completa de reseñas y la calificación promedio para una cochera específica."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Reseñas por Usuario",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/user/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews",
+								"user",
+								"{{userId}}"
+							]
+						},
+						"description": "Retorna la lista de reseñas escritas por o destinadas a un usuario en particular."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "jwt-token-aqui",
+			"type": "string"
+		},
+		{
+			"key": "parkingSpaceId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "reservationId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}
