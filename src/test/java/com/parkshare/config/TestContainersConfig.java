@@ -4,14 +4,21 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.time.Duration;
 
 /**
  * TestContainers configuration that spins up a PostGIS-enabled PostgreSQL container.
  *
  * Any @DataJpaTest or @SpringBootTest that imports this configuration (or extends
  * a base class that does) will automatically get a real PostgreSQL+PostGIS database.
+ *
+ * The postgis/postgis Docker image automatically installs the PostGIS extension
+ * via its entrypoint scripts, so no init script is needed.
  *
  * Usage:
  *   @Import(TestContainersConfig.class)
@@ -22,15 +29,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class TestContainersConfig {
 
+    private static final DockerImageName POSTGIS_IMAGE =
+            DockerImageName.parse("postgis/postgis:16-3.4-alpine")
+                    .asCompatibleSubstituteFor("postgres");
+
     @Container
     static PostgreSQLContainer<?> postgres =
-            new PostgreSQLContainer<>(org.locationtech.jts.util.UniqueCoordinateArrayFilter.class.getClassLoader() != null ? 
-                    org.testcontainers.utility.DockerImageName.parse("postgis/postgis:16-3.4-alpine").asCompatibleSubstituteFor("postgres") :
-                    org.testcontainers.utility.DockerImageName.parse("postgis/postgis:16-3.4-alpine").asCompatibleSubstituteFor("postgres"))
+            new PostgreSQLContainer<>(POSTGIS_IMAGE)
                     .withDatabaseName("parkshare_test")
                     .withUsername("test")
                     .withPassword("test")
-                    .withInitScript("init-postgis.sql");
+                    .withStartupTimeout(Duration.ofMinutes(3))
+                    .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*\\n", 2));
 
     static {
         System.setProperty("TESTCONTAINERS_RYUK_DISABLED", "true");
