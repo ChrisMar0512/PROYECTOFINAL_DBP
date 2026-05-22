@@ -11,7 +11,7 @@
   * Christian Mar (christian.mar@utec.edu.pe)
   * Adrian Rojas (adrian.rojas@utec.edu.pe)
   * Andre Sanchez(andre.sanchez@utec.edu.pe)
-  * 
+  * Bricet Rodrigo (bricet.rodrigo@utec.edu.pe)
 
 ---
 
